@@ -7,60 +7,97 @@
       </button>
     </div>
 
-    <!-- Final Dataset Table -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-      <table class="min-w-full leading-normal">
-        <thead>
-          <tr>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              ID
-            </th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    <!-- Final Dataset Cards -->
+    <div v-if="loading" class="text-center py-10">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+      <p class="mt-2 text-gray-500">載入中...</p>
+    </div>
+    
+    <div v-else-if="finalDataset.length === 0" class="text-center py-10 bg-white rounded-lg shadow-md">
+      <div class="text-gray-400 text-6xl mb-4">✅</div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">沒有最終資料</h3>
+      <p class="text-gray-500">目前沒有已通過審核的最終資料集。</p>
+    </div>
+    
+    <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div v-for="item in finalDataset" :key="item.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+        <!-- Header -->
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm font-medium text-gray-500">#{{ item.id }}</span>
+              <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                已通過
+              </span>
+            </div>
+            <div class="text-xs text-gray-400">
+              {{ new Date().toLocaleDateString() }}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-4 space-y-4">
+          <!-- Instruction -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               指令 (Instruction)
-            </th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              輸入 (Input)
-            </th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              系統提示 (System)
-            </th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-3">{{ item.instruction || '無' }}</p>
+            </div>
+          </div>
+          
+          <!-- Output -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
               最終輸出 (Output)
-            </th>
-             <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-4">{{ item.output || '無' }}</p>
+            </div>
+          </div>
+          
+          <!-- System Prompt (if exists) -->
+          <div v-if="item.system">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+              系統提示 (System)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-2">{{ item.system }}</p>
+            </div>
+          </div>
+          
+          <!-- Input (if exists) -->
+          <div v-if="item.input">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+              輸入 (Input)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
+            </div>
+          </div>
+          
+          <!-- Source (if exists) -->
+          <div v-if="item.source && item.source.length > 0">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
               來源 (Source)
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading"><td colspan="6" class="text-center py-10">載入中...</td></tr>
-          <tr v-else-if="finalDataset.length === 0">
-            <td colspan="6" class="text-center py-10 text-gray-500">
-              目前沒有已通過審核的最終資料。
-            </td>
-          </tr>
-          <tr v-else v-for="item in finalDataset" :key="item.id">
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap">{{ item.id }}</p>
-            </td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap truncate max-w-xs">{{ item.instruction }}</p>
-            </td>
-             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap truncate max-w-xs">{{ item.input }}</p>
-            </td>
-             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap truncate max-w-xs">{{ item.system }}</p>
-            </td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap truncate max-w-md">{{ item.output }}</p>
-            </td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-              <p class="text-gray-900 whitespace-no-wrap truncate max-w-xs">{{ item.source }}</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <div class="space-y-1">
+                <div v-for="(src, index) in item.source" :key="index" class="text-xs text-gray-600 bg-white px-2 py-1 rounded border">
+                  {{ src }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -131,4 +168,27 @@ const exportCSV = () => {
 }
 
 onMounted(fetchFinalDataset)
-</script> 
+</script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style> 

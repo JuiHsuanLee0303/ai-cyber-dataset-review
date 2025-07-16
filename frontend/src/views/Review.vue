@@ -31,6 +31,28 @@
 
     <!-- Data Card -->
     <div v-else class="bg-white p-8 rounded-lg shadow-md space-y-8">
+      <!-- Status Display -->
+      <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+        <div class="flex items-center space-x-4">
+          <!-- 重新生成中狀態 -->
+          <div v-if="currentItem.review_status === 'regenerating'" class="flex items-center space-x-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+              🔄 重新生成中
+            </span>
+          </div>
+          <!-- 一般待審核狀態 -->
+          <span v-else class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+            📋 待審核
+          </span>
+          <span class="text-sm text-gray-500">
+            資料 ID: {{ currentItem.id }}
+          </span>
+        </div>
+        <div class="text-sm text-gray-500">
+          審核統計: 通過 {{ currentItem.accept_count }} | 拒絕 {{ currentItem.reject_count }}
+        </div>
+      </div>
       <!-- System Prompt -->
       <div v-if="currentItem.system" class="border-l-4 border-purple-400 pl-4">
         <div class="flex items-center mb-3">
@@ -140,12 +162,20 @@
           進度: {{ currentIndex + 1 }} / {{ datasets.length }}
         </div>
         <div class="flex space-x-4">
-          <button @click="showRejectModal = true" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-colors duration-200">
-            拒絕 (Reject)
-          </button>
-          <button @click="handleAccept" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors duration-200">
-            接受 (Accept)
-          </button>
+          <!-- 重新生成中時顯示提示 -->
+          <div v-if="currentItem.review_status === 'regenerating'" class="flex items-center space-x-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+            <span class="text-orange-600 font-medium">正在重新生成中，請稍候...</span>
+          </div>
+          <!-- 正常審核按鈕 -->
+          <div v-else class="flex space-x-4">
+            <button @click="showRejectModal = true" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-colors duration-200">
+              拒絕 (Reject)
+            </button>
+            <button @click="handleAccept" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors duration-200">
+              接受 (Accept)
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -173,8 +203,17 @@
 
     <!-- Next button -->
      <div v-if="currentItem && !loading" class="mt-6 text-center">
-        <button @click="nextItem" class="px-8 py-3 bg-gray-400 text-white font-bold rounded-lg hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 transition-colors duration-200">
-          跳過此筆
+        <button 
+          @click="nextItem" 
+          :disabled="currentItem.review_status === 'regenerating'"
+          :class="[
+            'px-8 py-3 font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-colors duration-200',
+            currentItem.review_status === 'regenerating' 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-gray-400 text-white hover:bg-gray-500 focus:ring-gray-300'
+          ]"
+        >
+          {{ currentItem.review_status === 'regenerating' ? '重新生成中...' : '跳過此筆' }}
         </button>
       </div>
   </div>

@@ -39,6 +39,13 @@ services:
     container_name: ai-cyber-dataset-review-ollama
     networks:
       - app-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 networks:
   app-network:

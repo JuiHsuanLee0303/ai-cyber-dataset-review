@@ -1,49 +1,137 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-800">待審核資料集管理</h1>
-      <button @click="openModal()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-        新增資料
-      </button>
+      <div class="flex items-center space-x-4">
+        <h1 class="text-3xl font-bold text-gray-800">待審核資料集管理</h1>
+        <!-- 輪詢狀態指示器 -->
+        <div v-if="isPolling" class="flex items-center space-x-2 text-sm text-blue-600">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          <span>自動更新中...</span>
+        </div>
+      </div>
+      <div class="flex space-x-3">
+        <button @click="fetchDatasets" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>刷新</span>
+        </button>
+        <button @click="openModal()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+          新增資料
+        </button>
+      </div>
     </div>
 
-    <!-- Datasets Table -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-      <table class="min-w-full leading-normal">
-        <thead>
-          <tr>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">指令</th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">輸出</th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">通過</th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">不通過</th>
-            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading"><td colspan="6" class="text-center py-10">載入中...</td></tr>
-          <tr v-else-if="datasets.length === 0"><td colspan="6" class="text-center py-10">沒有資料。</td></tr>
-          <tr v-else v-for="item in datasets" :key="item.id">
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">{{ item.id }}</td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><p class="truncate max-w-md">{{ item.instruction }}</p></td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><p class="truncate max-w-md">{{ item.output }}</p></td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center text-green-600 font-semibold">{{ item.accept_count }}</td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
-              <button 
-                @click="showRejections(item)" 
-                :class="[item.reject_count > 0 ? 'text-red-600 hover:text-red-900 font-semibold' : 'text-gray-500 cursor-not-allowed']"
-                :disabled="item.reject_count === 0"
-              >
-                {{ item.reject_count }}
+    <!-- Datasets Cards -->
+    <div v-if="loading" class="text-center py-10">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-2 text-gray-500">載入中...</p>
+    </div>
+    
+    <div v-else-if="datasets.length === 0" class="text-center py-10 bg-white rounded-lg shadow-md">
+      <div class="text-gray-400 text-6xl mb-4">📋</div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">沒有待審核資料</h3>
+      <p class="text-gray-500">目前沒有需要審核的資料集。</p>
+    </div>
+    
+    <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div v-for="item in datasets" :key="item.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+        <!-- Header -->
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm font-medium text-gray-500">#{{ item.id }}</span>
+              <!-- 重新生成中狀態 -->
+              <div v-if="item.review_status === 'regenerating'" class="flex items-center space-x-2">
+                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
+                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                  重新生成中
+                </span>
+              </div>
+              <!-- 其他狀態 -->
+              <span v-else-if="item.review_status === 'pending'" class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                待審核
+              </span>
+              <span v-else-if="item.review_status === 'reviewing'" class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                審核中
+              </span>
+              <span v-else-if="item.review_status === 'done'" class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                已完成
+              </span>
+              <span v-else class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                {{ item.review_status }}
+              </span>
+            </div>
+            <div class="flex space-x-2">
+              <button @click="openModal(item)" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                編輯
               </button>
-            </td>
-            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-              <button @click="openModal(item)" class="text-indigo-600 hover:text-indigo-900 font-semibold mr-4">查看 / 編輯</button>
-              <button @click="handleDelete(item.id)" class="text-red-600 hover:text-red-900">刪除</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <button @click="handleDelete(item.id)" class="text-red-600 hover:text-red-900 text-sm font-medium">
+                刪除
+              </button>
+            </div>
+          </div>
+          
+          <!-- Stats -->
+          <div class="flex justify-between text-sm">
+            <span class="text-green-600 font-medium">通過: {{ item.accept_count }}</span>
+            <button 
+              @click="showRejections(item)" 
+              :class="[item.reject_count > 0 ? 'text-red-600 hover:text-red-900 font-medium' : 'text-gray-400 cursor-not-allowed']"
+              :disabled="item.reject_count === 0"
+            >
+              拒絕: {{ item.reject_count }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-4 space-y-4">
+          <!-- Instruction -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              指令 (Instruction)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-3">{{ item.instruction || '無' }}</p>
+            </div>
+          </div>
+          
+          <!-- Output -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+              輸出 (Output)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-4">{{ item.output || '無' }}</p>
+            </div>
+          </div>
+          
+          <!-- System Prompt (if exists) -->
+          <div v-if="item.system">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+              系統提示 (System)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-2">{{ item.system }}</p>
+            </div>
+          </div>
+          
+          <!-- Input (if exists) -->
+          <div v-if="item.input">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+              輸入 (Input)
+            </h4>
+            <div class="bg-gray-50 rounded-md p-3">
+              <p class="text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Add/Edit Modal -->
@@ -113,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import useAuth from '../store/auth'
 import { useToast } from 'vue-toastification'
 import useConfirm from '../composables/useConfirm'
@@ -125,6 +213,8 @@ const { confirm } = useConfirm()
 const datasets = ref([])
 const loading = ref(true)
 const error = ref(null)
+const pollingInterval = ref(null)
+const isPolling = ref(false)
 
 const getInitialForm = () => ({
   instruction: '',
@@ -151,11 +241,95 @@ const fetchDatasets = async () => {
   try {
     const response = await instance.get('/api/v1/datasets/')
     datasets.value = response.data
+    
+    // 檢查是否有正在重新生成的資料
+    const hasRegenerating = datasets.value.some(dataset => dataset.review_status === 'regenerating')
+    
+    // 如果有重新生成中的資料且尚未開始輪詢，則開始輪詢
+    if (hasRegenerating && !isPolling.value) {
+      startPolling()
+    }
+    // 如果沒有重新生成中的資料且正在輪詢，則停止輪詢
+    else if (!hasRegenerating && isPolling.value) {
+      stopPolling()
+    }
   } catch (err) {
     error.value = '無法獲取資料列表。'
   } finally {
     loading.value = false
   }
+}
+
+// 開始輪詢重新生成狀態
+const startPolling = () => {
+  if (isPolling.value) return
+  
+  isPolling.value = true
+  console.log('開始自動更新重新生成狀態...')
+  
+  pollingInterval.value = setInterval(async () => {
+    try {
+      const response = await instance.get('/api/v1/datasets/')
+      const newDatasets = response.data
+      
+      // 檢查是否有狀態變化
+      let hasChanges = false
+      const oldRegeneratingCount = datasets.value.filter(d => d.review_status === 'regenerating').length
+      const newRegeneratingCount = newDatasets.filter(d => d.review_status === 'regenerating').length
+      
+      // 檢查重新生成數量變化
+      if (oldRegeneratingCount !== newRegeneratingCount) {
+        hasChanges = true
+      } else {
+        // 檢查個別資料狀態變化
+        for (let i = 0; i < newDatasets.length; i++) {
+          const newDataset = newDatasets[i]
+          const oldDataset = datasets.value.find(d => d.id === newDataset.id)
+          
+          if (!oldDataset || oldDataset.review_status !== newDataset.review_status) {
+            hasChanges = true
+            break
+          }
+        }
+      }
+      
+      // 如果有變化，更新資料並顯示通知
+      if (hasChanges) {
+        console.log('檢測到狀態變化，更新資料...')
+        datasets.value = newDatasets
+        
+        // 如果有重新生成完成的資料，顯示通知
+        if (newRegeneratingCount < oldRegeneratingCount) {
+          const completedCount = oldRegeneratingCount - newRegeneratingCount
+          toast.success(`${completedCount} 筆資料重新生成完成！`)
+          console.log(`${completedCount} 筆資料重新生成完成`)
+        }
+        
+        // 如果沒有重新生成中的資料，停止輪詢
+        if (newRegeneratingCount === 0) {
+          console.log('所有重新生成完成，停止自動更新')
+          stopPolling()
+        }
+      }
+    } catch (err) {
+      console.error('輪詢更新失敗:', err)
+      // 如果連續失敗，停止輪詢避免無限重試
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.log('認證失敗，停止自動更新')
+        stopPolling()
+      }
+    }
+  }, 3000) // 每3秒檢查一次
+}
+
+// 停止輪詢
+const stopPolling = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
+    console.log('停止自動更新')
+  }
+  isPolling.value = false
 }
 
 const openModal = (item = null) => {
@@ -244,4 +418,32 @@ const closeRejectionModal = () => {
 }
 
 onMounted(fetchDatasets)
-</script> 
+
+// 組件卸載時清理輪詢
+onUnmounted(() => {
+  stopPolling()
+})
+</script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style> 

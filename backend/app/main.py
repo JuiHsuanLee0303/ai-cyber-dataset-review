@@ -10,6 +10,7 @@ from app.api.v1 import raw_datasets as raw_datasets_v1
 from app.api.v1 import legal_articles as legal_articles_v1
 from app.api.v1 import stats as stats_v1
 from app.api.v1 import users as users_v1
+from app.api.v1 import review as review_v1
 from app import crud, schemas
 from app.database.models import UserRole
 
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(raw_datasets_v1.router, prefix="/api/v1/raw-datasets", tags=["Raw Datasets"])
     app.include_router(legal_articles_v1.router, prefix="/api/v1/legal-articles", tags=["Legal Articles"])
     app.include_router(stats_v1.router, prefix="/api/v1/stats", tags=["Statistics"])
+    app.include_router(review_v1.router, prefix="/api/v1/review", tags=["Review"])
 
     @app.get("/", tags=["Root"])
     def read_root():
