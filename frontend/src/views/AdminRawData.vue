@@ -19,6 +19,12 @@
         <button @click="openModal()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
           新增資料
         </button>
+        <button @click="openBatchModal()" class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span>批量新增</span>
+        </button>
       </div>
     </div>
 
@@ -232,6 +238,129 @@
         </div>
       </div>
     </div>
+
+    <!-- Batch Add Modal -->
+    <div v-if="showBatchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold">批量新增資料</h3>
+          <button @click="closeBatchModal" class="text-gray-500 hover:text-gray-800">&times;</button>
+        </div>
+        
+        <!-- Input Methods -->
+        <div class="mb-6">
+          <div class="flex space-x-4 mb-4">
+            <button 
+              @click="batchInputMethod = 'text'"
+              :class="[batchInputMethod === 'text' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
+              class="px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              貼上 JSON 文字
+            </button>
+            <button 
+              @click="batchInputMethod = 'file'"
+              :class="[batchInputMethod === 'file' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
+              class="px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              上傳 JSON 檔案
+            </button>
+          </div>
+          
+          <!-- Text Input -->
+          <div v-if="batchInputMethod === 'text'" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                JSON 格式資料 (支援多筆資料的陣列格式)
+              </label>
+              <textarea 
+                v-model="batchJsonText" 
+                rows="15" 
+                class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm"
+                placeholder='[
+  {
+    "instruction": "這個資安獎懲辦法是根據什麼法律訂出來的？",
+    "input": "為什麼政府要特別訂資安獎懲規定？",
+    "output": "這是根據《資通安全管理法》第15條與第19條訂定的...",
+    "system": "說明本辦法與母法的法律關係。",
+    "history": [],
+    "source": ["公務機關所屬人員資通安全事項獎懲辦法第1條"]
+  }
+]'
+              ></textarea>
+            </div>
+          </div>
+          
+          <!-- File Input -->
+          <div v-if="batchInputMethod === 'file'" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                選擇 JSON 檔案
+              </label>
+              <input 
+                type="file" 
+                @change="handleFileUpload" 
+                accept=".json"
+                class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+              />
+              <p class="text-sm text-gray-500 mt-1">支援 .json 檔案格式</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Preview -->
+        <div v-if="batchPreview.length > 0" class="mb-6">
+          <h4 class="text-lg font-semibold mb-3">預覽 ({{ batchPreview.length }} 筆資料)</h4>
+          <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div v-for="(item, index) in batchPreview" :key="index" class="mb-3 p-3 bg-white rounded border">
+              <div class="text-sm">
+                <div class="font-medium text-gray-800">#{{ index + 1 }}</div>
+                <div class="text-gray-600 mt-1">
+                  <div><strong>指令:</strong> {{ item.instruction || '無' }}</div>
+                  <div><strong>輸入:</strong> {{ item.input || '無' }}</div>
+                  <div><strong>輸出:</strong> {{ item.output || '無' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Error Display -->
+        <div v-if="batchError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-red-700 text-sm">{{ batchError }}</p>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex justify-between items-center">
+          <div class="flex space-x-3">
+            <button 
+              @click="parseBatchData" 
+              :disabled="!batchJsonText && batchInputMethod === 'text'"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              解析資料
+            </button>
+            <button 
+              @click="clearBatchData" 
+              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+            >
+              清除
+            </button>
+          </div>
+          <div class="flex space-x-3">
+            <button @click="closeBatchModal" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+              取消
+            </button>
+            <button 
+              @click="submitBatchData" 
+              :disabled="batchPreview.length === 0 || batchSubmitting"
+              class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {{ batchSubmitting ? '新增中...' : `確認新增 ${batchPreview.length} 筆資料` }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -270,6 +399,14 @@ const showRejectionModal = ref(false)
 const rejectionLoading = ref(false)
 const rejectionReasons = ref([])
 const selectedDataset = ref(null)
+
+// For Batch Add Modal
+const showBatchModal = ref(false)
+const batchInputMethod = ref('text') // 'text' or 'file'
+const batchJsonText = ref('')
+const batchPreview = ref([])
+const batchError = ref('')
+const batchSubmitting = ref(false)
 
 const fetchDatasets = async () => {
   loading.value = true
@@ -480,6 +617,129 @@ const handleManualRegenerate = async (item) => {
     error.value = errorMsg
     toast.error(errorMsg)
     console.error('手動重新生成失敗:', err)
+  }
+}
+
+// Batch Add Functions
+const openBatchModal = () => {
+  showBatchModal.value = true
+  batchError.value = ''
+  batchPreview.value = []
+  batchJsonText.value = ''
+}
+
+const closeBatchModal = () => {
+  showBatchModal.value = false
+  batchError.value = ''
+  batchPreview.value = []
+  batchJsonText.value = ''
+}
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+    batchError.value = '請選擇有效的 JSON 檔案'
+    return
+  }
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      batchJsonText.value = e.target.result
+      parseBatchData()
+    } catch (err) {
+      batchError.value = '檔案讀取失敗'
+    }
+  }
+  reader.readAsText(file)
+}
+
+const parseBatchData = () => {
+  batchError.value = ''
+  batchPreview.value = []
+  
+  if (!batchJsonText.value.trim()) {
+    batchError.value = '請輸入 JSON 資料'
+    return
+  }
+  
+  try {
+    const data = JSON.parse(batchJsonText.value)
+    
+    if (!Array.isArray(data)) {
+      batchError.value = 'JSON 資料必須是陣列格式'
+      return
+    }
+    
+    if (data.length === 0) {
+      batchError.value = '陣列不能為空'
+      return
+    }
+    
+    // Validate each item
+    const validData = []
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i]
+      
+      if (!item.output) {
+        batchError.value = `第 ${i + 1} 筆資料缺少必要的 "output" 欄位`
+        return
+      }
+      
+      // Normalize the data
+      const normalizedItem = {
+        instruction: item.instruction || '',
+        input: item.input || '',
+        output: item.output,
+        system: item.system || '',
+        history: Array.isArray(item.history) ? item.history : [],
+        source: Array.isArray(item.source) ? item.source : []
+      }
+      
+      validData.push(normalizedItem)
+    }
+    
+    batchPreview.value = validData
+    console.log(`成功解析 ${validData.length} 筆資料`)
+    
+  } catch (err) {
+    batchError.value = `JSON 格式錯誤: ${err.message}`
+    console.error('JSON 解析錯誤:', err)
+  }
+}
+
+const clearBatchData = () => {
+  batchJsonText.value = ''
+  batchPreview.value = []
+  batchError.value = ''
+}
+
+const submitBatchData = async () => {
+  if (batchPreview.value.length === 0) {
+    batchError.value = '沒有可新增的資料'
+    return
+  }
+  
+  batchSubmitting.value = true
+  batchError.value = ''
+  
+  try {
+    // Use batch API endpoint for better performance
+    const response = await instance.post('/api/v1/datasets/batch', batchPreview.value)
+    
+    toast.success(`成功新增 ${response.data.length} 筆資料`)
+    closeBatchModal()
+    await fetchDatasets() // Refresh the list
+    
+  } catch (err) {
+    const errorMsg = `批量新增失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    batchError.value = errorMsg
+    toast.error(errorMsg)
+    console.error('批量新增失敗:', err)
+  } finally {
+    batchSubmitting.value = false
   }
 }
 
