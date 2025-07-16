@@ -9,6 +9,8 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./data/test.db
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - CORS_ORIGINS=https://initially-daring-foxhound.ngrok-free.app,https://*.ngrok-free.app
+      - ENVIRONMENT=development
     depends_on:
       - ollama
     networks:

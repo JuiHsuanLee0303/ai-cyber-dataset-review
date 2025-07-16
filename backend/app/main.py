@@ -16,6 +16,7 @@ from app.database.models import UserRole
 
 import os
 
+# CORS Middleware
 def get_cors_origins():
     """動態獲取 CORS 允許的來源"""
     origins = [
@@ -23,13 +24,6 @@ def get_cors_origins():
         "http://127.0.0.1:5173",
         "https://localhost:5173",
         "https://127.0.0.1:5173",
-        # 支援 ngrok 和其他 HTTPS 網址
-        "https://*.ngrok-free.app",
-        "https://*.ngrok.io",
-        "https://*.ngrok.app",
-        # 開發環境通配符（僅用於開發）
-        "http://*",
-        "https://*"
     ]
     
     # 從環境變數獲取額外的 CORS 來源
