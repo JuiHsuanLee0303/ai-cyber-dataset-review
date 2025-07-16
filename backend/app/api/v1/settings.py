@@ -28,12 +28,13 @@ def read_settings(
     settings_map = {s.key: _extract_value(s.value) for s in settings_db}
     
     # Ensure all required settings are present
-    required_keys = ["rejection_threshold", "ollama_model", "ollama_url"]
+    required_keys = ["rejection_threshold", "approval_threshold", "ollama_model", "ollama_url"]
     if not all(key in settings_map for key in required_keys):
         raise HTTPException(status_code=500, detail="One or more system settings are missing from the database.")
 
     return schemas.AllSettings(
         rejection_threshold=settings_map.get("rejection_threshold"),
+        approval_threshold=settings_map.get("approval_threshold"),
         ollama_model=settings_map.get("ollama_model"),
         ollama_url=settings_map.get("ollama_url"),
     )
@@ -55,6 +56,7 @@ def update_settings(
 
     return schemas.AllSettings(
         rejection_threshold=settings_map.get("rejection_threshold"),
+        approval_threshold=settings_map.get("approval_threshold"),
         ollama_model=settings_map.get("ollama_model"),
         ollama_url=settings_map.get("ollama_url"),
     ) 

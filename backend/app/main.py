@@ -39,6 +39,20 @@ def create_app() -> FastAPI:
                 )
                 crud.create_user(db=db, user=expert_user_in)
                 print("Expert user created.")
+            
+            # Initialize default system settings
+            default_settings = {
+                "rejection_threshold": 3,
+                "approval_threshold": 2,
+                "ollama_model": "qwen3:1.7b",
+                "ollama_url": "http://host.docker.internal:11434"
+            }
+            
+            for key, value in default_settings.items():
+                existing_setting = crud.get_setting(db, key)
+                if not existing_setting:
+                    crud.update_setting(db, key, value)
+                    print(f"Default setting '{key}' initialized with value: {value}")
         finally:
             db.close()
 

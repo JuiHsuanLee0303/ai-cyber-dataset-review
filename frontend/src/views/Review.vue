@@ -1,221 +1,359 @@
 <template>
-  <div class="max-w-5xl mx-auto">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">資料審核</h1>
-    
-    <!-- 資料集結構說明 -->
-    <div class="mb-8 bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
-      <h2 class="text-lg font-semibold text-blue-800 mb-3">📋 指令微調資料集結構說明</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-        <div class="space-y-2">
-          <p><strong>Instruction（指令）：</strong>告訴 AI 模型要執行什麼任務，例如「總結這段文字」或「生成 Python 函式」</p>
-          <p><strong>Input（輸入）：</strong>提供給指令的上下文或原始內容，可能是文章段落、程式碼片段或其他資料</p>
+  <div class="max-w-6xl mx-auto">
+    <!-- 頁面標題和進度 -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold text-gray-900">資料審核</h1>
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">{{ currentIndex + 1 }}</span> / {{ datasets.length }}
+          </div>
+          <div class="w-32 bg-gray-200 rounded-full h-2">
+            <div 
+              class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              :style="{ width: `${((currentIndex + 1) / datasets.length) * 100}%` }"
+            ></div>
+          </div>
         </div>
-        <div class="space-y-2">
-          <p><strong>Output（輸出）：</strong>期望 AI 模型回覆的正確答案或內容</p>
-          <p><strong>Source（來源）：</strong>生成這筆資料的法規依據，確保內容符合資安法規要求</p>
+      </div>
+      
+      <!-- 審核指引 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+          <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+            <span class="text-blue-600 text-sm font-bold">?</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-blue-900 mb-2">審核指引</h3>
+            <div class="text-sm text-blue-800 space-y-1">
+              <p>• <strong>Instruction</strong>：檢查指令是否清楚明確，能讓AI理解要執行什麼任務</p>
+              <p>• <strong>Output</strong>：評估AI的回答是否符合資安法規要求，對實務有幫助</p>
+              <p>• <strong>Source</strong>：確認法規依據是否正確相關，內容是否準確</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     
-    <div v-if="loading" class="text-center p-12">
-      <p class="text-gray-500">載入中...</p>
+    <div v-if="loading" class="text-center py-20">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-gray-600">載入審核資料中...</p>
     </div>
 
-    <div v-else-if="!currentItem" class="text-center p-12 bg-white rounded-lg shadow-md">
-      <h2 class="text-2xl font-bold text-gray-700">太棒了！</h2>
-      <p class="mt-2 text-gray-600">目前沒有更多待審核的資料了。</p>
-      <button @click="fetchDatasets" class="mt-6 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+    <div v-else-if="!currentItem" class="text-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-semibold text-gray-900 mb-2">審核完成！</h2>
+      <p class="text-gray-600 mb-6">目前沒有更多待審核的資料。</p>
+      <button @click="fetchDatasets" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
         重新載入
       </button>
     </div>
 
-    <!-- Data Card -->
-    <div v-else class="bg-white p-8 rounded-lg shadow-md space-y-8">
-      <!-- Status Display -->
-      <div class="flex justify-between items-center pb-4 border-b border-gray-200">
-        <div class="flex items-center space-x-4">
-          <!-- 重新生成中狀態 -->
-          <div v-if="currentItem.review_status === 'regenerating'" class="flex items-center space-x-2">
-            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
-            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
-              🔄 重新生成中
-            </span>
-          </div>
-          <!-- 一般待審核狀態 -->
-          <span v-else class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-            📋 待審核
-          </span>
-          <span class="text-sm text-gray-500">
-            資料 ID: {{ currentItem.id }}
-          </span>
-        </div>
-        <div class="text-sm text-gray-500">
-          審核統計: 通過 {{ currentItem.accept_count }} | 拒絕 {{ currentItem.reject_count }}
-        </div>
-      </div>
-      <!-- System Prompt -->
-      <div v-if="currentItem.system" class="border-l-4 border-purple-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-lg font-semibold text-purple-700">系統提示 (System Prompt)</h2>
-          <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">可選</span>
-        </div>
-        <p class="text-sm text-gray-600 mb-3">設定 AI 模型的角色和行為準則，例如「你是一位資安專家，專門協助處理資通安全相關問題」</p>
-        <div class="p-4 bg-purple-50 border border-purple-200 rounded-md text-gray-800 whitespace-pre-wrap font-mono text-sm">
-          {{ currentItem.system }}
-        </div>
-      </div>
-
-      <!-- Instruction -->
-      <div class="border-l-4 border-green-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-lg font-semibold text-green-700">指令 (Instruction)</h2>
-          <span class="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">必填</span>
-        </div>
-        <p class="text-sm text-gray-600 mb-3">明確告訴 AI 模型要執行什麼任務，例如「根據資安法規分析這段程式碼的安全性」或「生成符合資通安全管理法要求的資安政策」</p>
-        <div class="p-4 bg-green-50 border border-green-200 rounded-md text-gray-800 whitespace-pre-wrap font-mono text-sm">
-          {{ currentItem.instruction }}
-        </div>
-      </div>
-      
-      <!-- Input -->
-      <div v-if="currentItem.input" class="border-l-4 border-blue-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-lg font-semibold text-blue-700">輸入內容 (Input)</h2>
-          <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">可選</span>
-        </div>
-        <p class="text-sm text-gray-600 mb-3">提供給指令的上下文或原始資料，可能是程式碼、文件內容、資安事件描述等，讓 AI 模型有足夠資訊來執行指令</p>
-        <div class="p-4 bg-blue-50 border border-blue-200 rounded-md text-gray-800 whitespace-pre-wrap font-mono text-sm">
-          {{ currentItem.input }}
-        </div>
-      </div>
-      
-      <!-- History -->
-      <div v-if="currentItem.history && currentItem.history.length > 0" class="border-l-4 border-orange-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-lg font-semibold text-orange-700">對話歷史 (History)</h2>
-          <span class="ml-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">可選</span>
-        </div>
-        <p class="text-sm text-gray-600 mb-3">多輪對話的歷史記錄，包含用戶和 AI 的先前對話內容，用於維持對話的連續性和上下文</p>
-        <div class="p-4 bg-orange-50 border border-orange-200 rounded-md space-y-3">
-            <div v-for="(turn, index) in currentItem.history" :key="index" class="text-sm">
-                <p class="font-semibold text-orange-600 mb-1">{{ turn.role === 'user' ? '👤 用戶' : '🤖 AI' }}:</p>
-                <p class="whitespace-pre-wrap font-mono text-gray-800 bg-white p-2 rounded border">{{ turn.content }}</p>
+    <!-- 主要審核區域 -->
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 左側：指令和輸入 -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- 指令區域 -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">指令 (Instruction)</h3>
+                  <p class="text-sm text-gray-600">告訴AI要執行什麼任務</p>
+                </div>
+              </div>
             </div>
+          </div>
+          <div class="p-6">
+            <div class="prose prose-sm max-w-none">
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-800 whitespace-pre-wrap leading-relaxed">
+                {{ currentItem.instruction }}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Source -->
-      <div v-if="currentItem.source && currentItem.source.length > 0" class="border-l-4 border-red-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-lg font-semibold text-red-700">法規來源 (Source)</h2>
-          <span class="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">必填</span>
+        <!-- System Prompt (如果有) -->
+        <div v-if="currentItem.system" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">系統設定 (System)</h3>
+                  <p class="text-sm text-gray-600">設定AI的角色和行為準則</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {{ currentItem.system }}
+            </div>
+          </div>
         </div>
-        <p class="text-sm text-gray-600 mb-3">生成這筆資料所依據的資安法規條文，確保 AI 模型的回答符合法規要求，具有法律依據</p>
-        <div class="bg-red-50 border border-red-200 p-4 rounded-md space-y-4">
-          <div v-for="(src, index) in currentItem.source" :key="index" class="text-sm">
-            <div class="flex items-start space-x-3">
-              <span class="text-red-500 mt-1 text-lg">📜</span>
-              <div class="flex-1">
-                <div class="text-red-700 font-medium bg-white p-2 rounded border">{{ src }}</div>
-                <div v-if="sourceDetails[index]" class="mt-3 p-3 bg-white rounded border-l-4 border-red-500">
-                  <div class="text-xs text-gray-500 mb-2 font-semibold">📋 法規條文內容：</div>
-                  <div class="text-gray-800 whitespace-pre-wrap text-sm">{{ sourceDetails[index].content }}</div>
+
+        <!-- Input (如果有) -->
+        <div v-if="currentItem.input" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
                 </div>
-                <div v-else-if="sourceLoading[index]" class="mt-3 text-xs text-gray-500 flex items-center">
-                  <span class="animate-spin mr-2">⏳</span> 載入法規內容中...
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">輸入內容 (Input)</h3>
+                  <p class="text-sm text-gray-600">提供給指令的上下文或原始資料</p>
                 </div>
-                <div v-else-if="sourceErrors[index]" class="mt-3 text-xs text-red-500 flex items-center">
-                  <span class="mr-2">❌</span> 無法載入法規內容
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {{ currentItem.input }}
+            </div>
+          </div>
+        </div>
+
+        <!-- History (如果有) -->
+        <div v-if="currentItem.history && currentItem.history.length > 0" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">對話歷史 (History)</h3>
+                  <p class="text-sm text-gray-600">多輪對話的歷史記錄</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="space-y-6">
+              <div v-for="(conversation, index) in currentItem.history" :key="index" class="space-y-4">
+                <!-- 對話編號 -->
+                <div class="flex items-center space-x-2">
+                  <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                    <span class="text-xs font-medium text-orange-800">{{ index + 1 }}</span>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">對話 {{ index + 1 }}</span>
+                </div>
+                
+                <!-- 問題 -->
+                <div class="flex space-x-3">
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-blue-100 text-blue-800">
+                    Q
+                  </div>
+                  <div class="flex-1">
+                    <div class="text-xs text-gray-500 mb-1">問題</div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      {{ conversation[0] }}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 回答 -->
+                <div class="flex space-x-3">
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-100 text-gray-800">
+                    A
+                  </div>
+                  <div class="flex-1">
+                    <div class="text-xs text-gray-500 mb-1">回答</div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      {{ conversation[1] }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Generated Output -->
-      <div class="border-l-4 border-indigo-400 pl-4">
-        <div class="flex items-center mb-3">
-          <h2 class="text-xl font-bold text-indigo-700">AI 生成內容 (Output)</h2>
-          <span class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">必填</span>
-        </div>
-        <p class="text-sm text-gray-600 mb-3">根據指令和輸入內容，AI 模型應該產生的正確回答或內容，這將作為訓練資料的標準答案</p>
-        <div class="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-md text-gray-900 whitespace-pre-wrap font-mono text-sm">
-          {{ currentItem.output }}
-        </div>
-      </div>
-
-      <!-- 審核重點提示 -->
-      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-        <h3 class="text-lg font-semibold text-yellow-800 mb-2">🔍 審核重點</h3>
-        <div class="text-sm text-yellow-700 space-y-1">
-          <p>• <strong>指令明確性：</strong>指令是否清楚明確，AI 模型能理解要執行什麼任務？</p>
-          <p>• <strong>內容準確性：</strong>AI 生成的內容是否符合資安法規要求？</p>
-          <p>• <strong>法規依據：</strong>資料來源是否正確，法規條文是否相關？</p>
-          <p>• <strong>實用性：</strong>這筆資料是否對資安實務有幫助？</p>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="pt-6 border-t flex justify-between items-center">
-        <div class="text-sm text-gray-500">
-          進度: {{ currentIndex + 1 }} / {{ datasets.length }}
-        </div>
-        <div class="flex space-x-4">
-          <!-- 重新生成中時顯示提示 -->
-          <div v-if="currentItem.review_status === 'regenerating'" class="flex items-center space-x-2">
-            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
-            <span class="text-orange-600 font-medium">正在重新生成中，請稍候...</span>
+                <!-- AI回答 - 重點突出 -->
+                <div class="bg-white rounded-xl border-2 border-blue-300 shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white">AI回答 (Output)</h3>
+                  <p class="text-sm text-blue-100">AI應該產生的正確答案</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <!-- 正常審核按鈕 -->
-          <div v-else class="flex space-x-4">
-            <button @click="showRejectModal = true" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-colors duration-200">
-              拒絕 (Reject)
-            </button>
-            <button @click="handleAccept" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors duration-200">
-              接受 (Accept)
-            </button>
+          <div class="p-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {{ currentItem.output }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：法規依據和AI回答 -->
+      <div class="space-y-6">
+        <!-- 法規依據 -->
+        <div v-if="currentItem.source && currentItem.source.length > 0" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-red-50 to-rose-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">法規依據 (Source)</h3>
+                  <p class="text-sm text-gray-600">生成資料所依據的資安法規</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4">
+              <div v-for="(src, index) in currentItem.source" :key="index" class="space-y-3">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div class="text-sm font-medium text-red-800 mb-2">{{ src }}</div>
+                  <div v-if="sourceDetails[index]" class="bg-white border border-red-200 rounded p-3">
+                    <div class="text-xs text-red-600 font-medium mb-2">法規內容：</div>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ sourceDetails[index].content }}</div>
+                  </div>
+                  <div v-else-if="sourceLoading[index]" class="flex items-center space-x-2 text-sm text-gray-500">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    <span>載入法規內容...</span>
+                  </div>
+                  <div v-else-if="sourceErrors[index]" class="text-sm text-red-600">
+                    {{ sourceErrors[index] }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 審核操作 -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">審核決定</h3>
+          </div>
+          <div class="p-6">
+            <div v-if="currentItem.review_status === 'regenerating'" class="text-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p class="text-gray-600 font-medium">重新生成中...</p>
+              <p class="text-sm text-gray-500 mt-2">請稍候，系統正在重新生成此筆資料</p>
+            </div>
+            <div v-else class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <button 
+                  @click="handleAccept"
+                  class="flex items-center justify-center space-x-2 px-6 py-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span>接受</span>
+                </button>
+                <button 
+                  @click="showRejectModal = true"
+                  class="flex items-center justify-center space-x-2 px-6 py-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  <span>拒絕</span>
+                </button>
+              </div>
+              <button 
+                @click="nextItem"
+                class="w-full px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                跳過此筆
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 資料狀態 -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">資料狀態</h3>
+          </div>
+          <div class="p-6">
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">資料ID</span>
+                <span class="text-sm font-medium text-gray-900">#{{ currentItem.id }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">通過次數</span>
+                <span class="text-sm font-medium text-green-600">{{ currentItem.accept_count }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">拒絕次數</span>
+                <span class="text-sm font-medium text-red-600">{{ currentItem.reject_count }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Reject Modal -->
+    <!-- 拒絕模態框 -->
     <div v-if="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-        <h3 class="text-xl font-bold mb-4">拒絕原因</h3>
-        <textarea 
-          v-model="rejectComment"
-          rows="4"
-          class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="請說明拒絕這筆生成資料的原因..."
-        ></textarea>
-        <div class="mt-6 flex justify-end space-x-4">
-          <button @click="showRejectModal = false" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">拒絕原因</h3>
+          <p class="text-sm text-gray-600 mt-1">請說明拒絕這筆資料的原因，這將幫助改進資料品質</p>
+        </div>
+        <div class="p-6">
+          <textarea 
+            v-model="rejectComment"
+            rows="4"
+            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder="請詳細說明拒絕原因，例如：指令不夠清楚、內容不符合法規要求、法規依據錯誤等..."
+          ></textarea>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <button 
+            @click="showRejectModal = false" 
+            class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+          >
             取消
           </button>
-          <button @click="handleReject" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+          <button 
+            @click="handleReject" 
+            class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+          >
             確認拒絕
           </button>
         </div>
       </div>
     </div>
-
-    <!-- Next button -->
-     <div v-if="currentItem && !loading" class="mt-6 text-center">
-        <button 
-          @click="nextItem" 
-          :disabled="currentItem.review_status === 'regenerating'"
-          :class="[
-            'px-8 py-3 font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-colors duration-200',
-            currentItem.review_status === 'regenerating' 
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-gray-400 text-white hover:bg-gray-500 focus:ring-gray-300'
-          ]"
-        >
-          {{ currentItem.review_status === 'regenerating' ? '重新生成中...' : '跳過此筆' }}
-        </button>
-      </div>
   </div>
 </template>
 

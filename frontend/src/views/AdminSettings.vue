@@ -99,6 +99,8 @@
         <!-- Review Threshold -->
         <div class="mb-8">
           <h2 class="text-xl font-semibold text-gray-700 mb-4">審核閾值設定</h2>
+          
+          <!-- Rejection Threshold -->
           <div class="mb-6">
             <label for="rejection-threshold" class="block text-gray-700 text-sm font-bold mb-2">
               拒絕閾值 (Rejection Threshold)
@@ -110,6 +112,23 @@
               type="number"
               id="rejection-threshold"
               v-model.number="form.rejection_threshold"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              min="1"
+            />
+          </div>
+          
+          <!-- Approval Threshold -->
+          <div class="mb-6">
+            <label for="approval-threshold" class="block text-gray-700 text-sm font-bold mb-2">
+              通過閾值 (Approval Threshold)
+            </label>
+            <p class="text-xs text-gray-500 mb-2">
+              當一筆資料的通過數量達到此數值，將自動轉入最終資料集。
+            </p>
+            <input
+              type="number"
+              id="approval-threshold"
+              v-model.number="form.approval_threshold"
               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               min="1"
             />
@@ -160,6 +179,7 @@ const successMessage = ref('')
 // Form and Settings
 const form = ref({
   rejection_threshold: 3,
+  approval_threshold: 2,
   ollama_model: '',
   ollama_url: 'http://host.docker.internal:11434'
 })

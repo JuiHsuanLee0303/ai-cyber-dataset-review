@@ -45,16 +45,34 @@ def submit_review(
         review=review
     )
 
-    # Trigger auto-regeneration if rejection threshold is met
-    if review.result.upper() == "REJECT":
-        threshold_setting = crud.get_setting(db, "rejection_threshold")
-        # Use a default if not set, although init_db should handle it
-        threshold = _extract_value(threshold_setting.value) if threshold_setting else 3
+    # We need to refresh the dataset object to get the updated counts
+    db.refresh(dataset)
+    
+    # Check approval threshold and move to final dataset if met
+    if review.result.upper() == "ACCEPT":
+        approval_threshold_setting = crud.get_setting(db, "approval_threshold")
+        approval_threshold = _extract_value(approval_threshold_setting.value) if approval_threshold_setting else 2
         
-        # We need to refresh the dataset object to get the updated reject_count
-        db.refresh(dataset)
+        if dataset.accept_count >= approval_threshold:
+            print(f"Dataset {dataset.id} has reached the approval threshold. Moving to final dataset.")
+            # Move to final dataset
+            final_dataset = models.FinalDataset(
+                original_input=dataset.input or "",
+                final_output=dataset.output,
+                raw_dataset_id=dataset.id
+            )
+            db.add(final_dataset)
+            dataset.review_status = "accepted"
+            db.commit()
+            print(f"Dataset {dataset.id} has been moved to final dataset.")
+    
+    # Trigger auto-regeneration if rejection threshold is met
+    elif review.result.upper() == "REJECT":
+        rejection_threshold_setting = crud.get_setting(db, "rejection_threshold")
+        # Use a default if not set, although init_db should handle it
+        rejection_threshold = _extract_value(rejection_threshold_setting.value) if rejection_threshold_setting else 3
 
-        if dataset.reject_count >= threshold:
+        if dataset.reject_count >= rejection_threshold:
             print(f"Dataset {dataset.id} has reached the rejection threshold. Adding regeneration task to background.")
             background_tasks.add_task(regenerate_dataset, db, dataset.id)
             

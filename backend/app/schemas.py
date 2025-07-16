@@ -87,6 +87,7 @@ class SystemSettingsUpdate(BaseModel):
 # --- All Settings Schema ---
 class AllSettings(BaseModel):
     rejection_threshold: int
+    approval_threshold: int
     ollama_model: str
     ollama_url: str
 

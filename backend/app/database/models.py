@@ -25,6 +25,8 @@ class ReviewStatus(str, enum.Enum):
     REVIEWING = "reviewing"
     DONE = "done"
     REGENERATING = "regenerating"  # 新增：正在重新生成中
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
 
 
 class User(Base):
