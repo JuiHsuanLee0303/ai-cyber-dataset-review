@@ -51,8 +51,7 @@ class RawDataset(RawDatasetBase):
 class ReviewLogInDB(BaseModel):
     reviewer_id: int
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RawDatasetWithStats(RawDataset):
     accept_count: int

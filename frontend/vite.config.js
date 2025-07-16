@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     host: true, // Allow access from outside the container
+    allowedHosts: ['initially-daring-foxhound.ngrok-free.app'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
