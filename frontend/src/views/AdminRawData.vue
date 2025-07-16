@@ -1,269 +1,553 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-6">
-      <div class="flex items-center space-x-4">
-        <h1 class="text-3xl font-bold text-gray-800">待審核資料集管理</h1>
-        <!-- 輪詢狀態指示器 -->
-        <div v-if="isPolling" class="flex items-center space-x-2 text-sm text-blue-600">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <span>自動更新中...</span>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-6">
+          <!-- Left Section -->
+          <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h1 class="text-2xl font-bold text-gray-900">待審核資料集管理</h1>
+                <p class="text-sm text-gray-500">管理與審核AI訓練資料集</p>
+              </div>
+            </div>
+            
+            <!-- Auto Update Indicator -->
+            <div v-if="isPolling" class="flex items-center space-x-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
+              <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+              <span class="text-xs font-medium text-blue-700">自動更新中</span>
+            </div>
+          </div>
+          
+          <!-- Right Section -->
+          <div class="flex items-center space-x-4">
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2">
+              <button 
+                @click="fetchDatasets" 
+                class="btn btn-primary btn-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>刷新</span>
+              </button>
+              
+              <button 
+                @click="openModal()" 
+                class="btn btn-success btn-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>新增資料</span>
+              </button>
+              
+              <button 
+                @click="openBatchModal()" 
+                class="btn btn-secondary btn-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>批量新增</span>
+              </button>
+            </div>
+            
+            <!-- Display Mode Toggle -->
+            <div class="flex items-center space-x-3">
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-medium text-gray-700">顯示模式</span>
+                <div class="relative flex bg-gray-200 rounded-lg p-1">
+                  <!-- Sliding Background -->
+                  <div 
+                    class="absolute top-1 bottom-1 w-8 bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out"
+                    :class="displayMode === 'card' ? 'left-1' : 'left-9'"
+                  ></div>
+                  
+                  <button 
+                    @click="displayMode = 'card'"
+                    class="relative z-10 w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
+                    :class="displayMode === 'card' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+                    title="卡片式顯示"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                  </button>
+                  
+                  <button 
+                    @click="displayMode = 'list'"
+                    class="relative z-10 w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
+                    :class="displayMode === 'list' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+                    title="列表式顯示"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Batch Actions -->
+              <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                  已選擇 {{ selectedItems.length }} 項
+                </span>
+                <button 
+                  @click="handleBatchDelete"
+                  class="btn btn-danger btn-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                  <span>批量刪除</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="flex space-x-3">
-        <button @click="fetchDatasets" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          <span>刷新</span>
-        </button>
-        <button @click="openModal()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-          新增資料
-        </button>
-        <button @click="openBatchModal()" class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 flex items-center space-x-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <span>批量新增</span>
-        </button>
       </div>
     </div>
 
-    <!-- Datasets Cards -->
-    <div v-if="loading" class="text-center py-10">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-      <p class="mt-2 text-gray-500">載入中...</p>
-    </div>
-    
-    <div v-else-if="datasets.length === 0" class="text-center py-10 bg-white rounded-lg shadow-md">
-      <div class="text-gray-400 text-6xl mb-4">📋</div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">沒有待審核資料</h3>
-      <p class="text-gray-500">目前沒有需要審核的資料集。</p>
-    </div>
-    
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      <div v-for="item in datasets" :key="item.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
-        <!-- Header -->
-        <div class="p-4 border-b border-gray-200">
-          <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center space-x-3">
-              <span class="text-sm font-medium text-gray-500">#{{ item.id }}</span>
-              <!-- 重新生成中狀態 -->
-              <div v-if="item.review_status === 'regenerating'" class="flex items-center space-x-2">
-                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
-                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                  重新生成中
-                </span>
-              </div>
-              <!-- 其他狀態 -->
-              <span v-else-if="item.review_status === 'pending'" class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                待審核
-              </span>
-              <span v-else-if="item.review_status === 'reviewing'" class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                審核中
-              </span>
-              <span v-else-if="item.review_status === 'done'" class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                已完成
-              </span>
-              <span v-else class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                {{ item.review_status }}
-              </span>
-            </div>
-            <div class="flex space-x-2">
-              <button @click="openModal(item)" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
-                編輯
-              </button>
-              <button 
-                @click="handleManualRegenerate(item)" 
-                :disabled="item.review_status === 'regenerating'"
-                :class="[
-                  item.review_status === 'regenerating' 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-orange-600 hover:text-orange-900'
-                ]"
-                class="text-sm font-medium"
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-16">
+        <div class="relative">
+          <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-8 h-8 bg-white rounded-full"></div>
+          </div>
+        </div>
+        <p class="mt-4 text-lg font-medium text-gray-700">載入資料中...</p>
+        <p class="mt-2 text-sm text-gray-500">請稍候，正在獲取最新資料</p>
+      </div>
+      
+      <!-- Empty State -->
+      <div v-else-if="datasets.length === 0" class="flex flex-col items-center justify-center py-16">
+        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">沒有待審核資料</h3>
+        <p class="text-gray-500 text-center max-w-md mb-6">目前沒有需要審核的資料集。您可以點擊「新增資料」按鈕開始新增資料。</p>
+        <button @click="openModal()" class="btn btn-primary px-4 py-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>新增第一筆資料</span>
+        </button>
+      </div>
+      
+      <!-- Data Content -->
+      <div v-else>
+        <!-- Display Mode Content -->
+        <transition 
+          name="display-mode" 
+          mode="out-in"
+          appear
+        >
+          <!-- Card View -->
+          <div v-if="displayMode === 'card'" key="card" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <transition-group 
+              name="card-item" 
+              tag="div" 
+              class="contents"
+            >
+              <div 
+                v-for="(item, index) in datasets" 
+                :key="item.id" 
+                class="card"
+                :class="{ 'ring-2 ring-blue-500': selectedItems.includes(item.id) }"
+                :style="{ animationDelay: `${index * 50}ms` }"
               >
-                重新生成
-              </button>
-              <button @click="handleDelete(item.id)" class="text-red-600 hover:text-red-900 text-sm font-medium">
-                刪除
-              </button>
+              <!-- Header -->
+              <div class="card-header">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex items-center space-x-3">
+                    <input 
+                      type="checkbox" 
+                      :value="item.id" 
+                      v-model="selectedItems"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span class="text-sm font-medium text-gray-500">#{{ item.id }}</span>
+                    <!-- Status Badge -->
+                    <span :class="getStatusBadgeClass(item.review_status)" class="status-badge">
+                      {{ getStatusText(item.review_status) }}
+                    </span>
+                  </div>
+                  <div class="flex space-x-2">
+                    <button @click="openModal(item)" class="btn btn-primary btn-sm">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                      <span>編輯</span>
+                    </button>
+                    <button @click="deleteDataset(item.id)" class="btn btn-danger btn-sm">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                      <span>刪除</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="flex justify-between items-center">
+                  <div class="flex space-x-4 text-sm">
+                    <span class="text-green-600 font-medium">通過: {{ item.accept_count }}</span>
+                    <button 
+                      @click="viewRejectionReasons(item)" 
+                      :class="[item.reject_count > 0 ? 'text-red-600 hover:text-red-900 font-medium' : 'text-gray-400 cursor-not-allowed']"
+                      :disabled="item.reject_count === 0"
+                    >
+                      拒絕: {{ item.reject_count }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Content -->
+              <div class="card-body">
+                <div class="space-y-4">
+                  <!-- Instruction -->
+                  <div v-if="item.instruction">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      指令 (Instruction)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-3">
+                      <p class="text-sm text-gray-800 line-clamp-3">{{ item.instruction }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Output -->
+                  <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                      輸出 (Output)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-3">
+                      <p class="text-sm text-gray-800 line-clamp-4">{{ item.output }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- System Prompt (if exists) -->
+                  <div v-if="item.system">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                      系統提示 (System)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-3">
+                      <p class="text-sm text-gray-800 line-clamp-2">{{ item.system }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Input (if exists) -->
+                  <div v-if="item.input">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                      輸入 (Input)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-3">
+                      <p class="text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Footer -->
+              <div class="card-footer">
+                <button 
+                  @click="handleManualRegenerate(item)" 
+                  :disabled="item.review_status === 'regenerating'"
+                  :class="[
+                    item.review_status === 'regenerating'
+                      ? 'btn btn-secondary btn-sm opacity-50 cursor-not-allowed'
+                      : 'btn btn-warning btn-sm'
+                  ]"
+                  class="w-full"
+                >
+                  <svg v-if="item.review_status === 'regenerating'" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  <span>{{ item.review_status === 'regenerating' ? '重新生成中...' : '手動重新生成' }}</span>
+                </button>
+              </div>
             </div>
+          </transition-group>
           </div>
           
-          <!-- Stats -->
-          <div class="flex justify-between text-sm">
-            <span class="text-green-600 font-medium">通過: {{ item.accept_count }}</span>
-            <button 
-              @click="showRejections(item)" 
-              :class="[item.reject_count > 0 ? 'text-red-600 hover:text-red-900 font-medium' : 'text-gray-400 cursor-not-allowed']"
-              :disabled="item.reject_count === 0"
-            >
-              拒絕: {{ item.reject_count }}
-            </button>
-          </div>
-          
-          <!-- Manual Regenerate Button -->
-          <div class="mt-3 pt-3 border-t border-gray-200">
-            <button 
-              @click="handleManualRegenerate(item)" 
-              :disabled="item.review_status === 'regenerating'"
-              :class="[
-                item.review_status === 'regenerating'
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
-              ]"
-              class="w-full py-2 px-3 rounded-md border text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
-            >
-              <svg v-if="item.review_status === 'regenerating'" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              <span>{{ item.review_status === 'regenerating' ? '重新生成中...' : '手動重新生成' }}</span>
-            </button>
+          <!-- List View -->
+          <div v-else key="list" class="card">
+            <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left">
+                    <input 
+                      type="checkbox" 
+                      @change="toggleSelectAll"
+                      :checked="selectedItems.length === datasets.length && datasets.length > 0"
+                      :indeterminate="selectedItems.length > 0 && selectedItems.length < datasets.length"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">狀態</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">指令</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸入</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸出</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">統計</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="item in datasets" :key="item.id" class="hover:bg-gray-50 transition-colors duration-150">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <input 
+                      type="checkbox" 
+                      :value="item.id" 
+                      v-model="selectedItems"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    #{{ item.id }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span :class="getStatusBadgeClass(item.review_status)" class="status-badge">
+                      {{ getStatusText(item.review_status) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                    <div class="truncate" :title="item.instruction">{{ item.instruction || '-' }}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                    <div class="truncate" :title="item.input">{{ item.input || '-' }}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                    <div class="truncate" :title="item.output">{{ item.output }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="space-y-1">
+                      <div class="text-green-600">通過: {{ item.accept_count }}</div>
+                      <div class="text-red-600">拒絕: {{ item.reject_count }}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex space-x-2">
+                      <button @click="openModal(item)" class="btn btn-primary btn-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <span>編輯</span>
+                      </button>
+                      <button @click="deleteDataset(item.id)" class="btn btn-danger btn-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        <span>刪除</span>
+                      </button>
+                      <button @click="viewRejectionReasons(item)" class="btn btn-warning btn-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <span>拒絕原因</span>
+                      </button>
+                      <button 
+                        v-if="item.review_status !== 'regenerating'"
+                        @click="handleManualRegenerate(item)" 
+                        class="btn btn-secondary btn-sm"
+                      >
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>重新生成</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        
-        <!-- Content -->
-        <div class="p-4 space-y-4">
-          <!-- Instruction -->
-          <div>
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              指令 (Instruction)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-3">{{ item.instruction || '無' }}</p>
-            </div>
-          </div>
-          
-          <!-- Output -->
-          <div>
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-              輸出 (Output)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-4">{{ item.output || '無' }}</p>
-            </div>
-          </div>
-          
-          <!-- System Prompt (if exists) -->
-          <div v-if="item.system">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-              系統提示 (System)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-2">{{ item.system }}</p>
-            </div>
-          </div>
-          
-          <!-- Input (if exists) -->
-          <div v-if="item.input">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-              輸入 (Input)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
-            </div>
-          </div>
-        </div>
+        </transition>
       </div>
     </div>
 
     <!-- Add/Edit Modal -->
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-xl font-bold mb-4">{{ editingItem ? '編輯資料' : '新增資料' }}</h3>
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">系統提示 (System)</label>
-            <textarea v-model="form.system" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm"></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">指令 (Instruction)</label>
-            <textarea v-model="form.instruction" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm" required></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">輸入內容 (Input)</label>
-            <textarea v-model="form.input" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm"></textarea>
-          </div>
-           <div>
-            <label class="block text-sm font-medium text-gray-700">歷史紀錄 (History - JSON format)</label>
-            <textarea v-model="form.history" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm"></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">輸出 (Output)</label>
-            <textarea v-model="form.output" rows="5" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm" required></textarea>
-          </div>
-           <div>
-            <label class="block text-sm font-medium text-gray-700">資料來源 (Source) - 每行一個</label>
-            <textarea v-model="form.source" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm"></textarea>
-          </div>
-          <div v-if="error" class="text-red-500 text-sm mb-4">{{ error }}</div>
-          <div class="mt-6 flex justify-end space-x-4">
-            <button type="button" @click="showModal = false" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">取消</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">確認</button>
-          </div>
-        </form>
+    <div v-if="showModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="text-xl font-bold text-gray-900">{{ editingItem ? '編輯資料' : '新增資料' }}</h3>
+          <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <form @submit.prevent="handleSubmit" class="space-y-6">
+            <div class="form-group">
+              <label class="form-label">系統提示 (System)</label>
+              <textarea v-model="form.system" rows="2" class="form-textarea" placeholder="輸入系統提示內容..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">指令 (Instruction) <span class="text-red-500">*</span></label>
+              <textarea v-model="form.instruction" rows="3" class="form-textarea" required placeholder="輸入指令內容..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">輸入內容 (Input)</label>
+              <textarea v-model="form.input" rows="3" class="form-textarea" placeholder="輸入內容..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">歷史紀錄 (History - JSON format)</label>
+              <textarea v-model="form.history" rows="3" class="form-textarea" placeholder='[{"role": "user", "content": "..."}]'></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">輸出 (Output) <span class="text-red-500">*</span></label>
+              <textarea v-model="form.output" rows="5" class="form-textarea" required placeholder="輸入輸出內容..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">資料來源 (Source) - 每行一個</label>
+              <textarea v-model="form.source" rows="2" class="form-textarea" placeholder="資料來源1&#10;資料來源2"></textarea>
+            </div>
+            
+            <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-red-700 text-sm">{{ error }}</p>
+            </div>
+          </form>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" @click="showModal = false" class="btn btn-secondary">
+            <span>取消</span>
+          </button>
+          <button type="submit" @click="handleSubmit" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>{{ editingItem ? '更新' : '新增' }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Rejection Reasons Modal -->
-    <div v-if="showRejectionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-3xl">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-bold">查看拒絕原因 (ID: {{ selectedDataset.id }})</h3>
-          <button @click="closeRejectionModal" class="text-gray-500 hover:text-gray-800">&times;</button>
+    <div v-if="showRejectionModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="text-xl font-bold text-gray-900">查看拒絕原因 (ID: {{ selectedDataset.id }})</h3>
+          <button @click="closeRejectionModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
-        <div v-if="rejectionLoading" class="text-center py-10">載入中...</div>
-        <div v-else-if="rejectionReasons.length === 0" class="text-center py-10">沒有拒絕紀錄。</div>
-        <div v-else class="max-h-96 overflow-y-auto">
-          <ul>
-            <li v-for="reason in rejectionReasons" :key="reason.id" class="border-b py-3">
-              <p class="font-mono text-gray-800">{{ reason.comment || '沒有提供原因' }}</p>
-              <div class="text-xs text-gray-500 mt-2 text-right">
-                <span>審核者: {{ reason.reviewer_username }}</span> | 
-                <span>時間: {{ new Date(reason.timestamp).toLocaleString() }}</span>
+        
+        <div class="modal-body">
+          <div v-if="rejectionLoading" class="flex flex-col items-center justify-center py-10">
+            <div class="loading-spinner w-8 h-8"></div>
+            <p class="mt-4 text-gray-600">載入拒絕原因中...</p>
+          </div>
+          
+          <div v-else-if="rejectionReasons.length === 0" class="text-center py-10">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">沒有拒絕紀錄</h4>
+            <p class="text-gray-500">此資料集目前沒有被拒絕的紀錄。</p>
+          </div>
+          
+          <div v-else class="space-y-4">
+            <div class="flex items-center space-x-2 mb-4">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <span class="text-lg font-medium text-gray-900">拒絕原因列表</span>
+            </div>
+            
+            <div class="max-h-96 overflow-y-auto space-y-3">
+              <div v-for="reason in rejectionReasons" :key="reason.id" class="card">
+                <div class="card-body">
+                  <p class="text-gray-800 mb-3">{{ reason.comment || '沒有提供原因' }}</p>
+                  <div class="flex justify-between items-center text-xs text-gray-500">
+                    <span>審核者: {{ reason.reviewer_username }}</span>
+                    <span>{{ new Date(reason.timestamp).toLocaleString() }}</span>
+                  </div>
+                </div>
               </div>
-            </li>
-          </ul>
+            </div>
+          </div>
         </div>
-        <div class="mt-6 flex justify-end">
-          <button @click="closeRejectionModal" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">關閉</button>
+        
+        <div class="modal-footer">
+          <button @click="closeRejectionModal" class="btn btn-secondary">
+            <span>關閉</span>
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Batch Add Modal -->
-    <div v-if="showBatchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-xl font-bold">批量新增資料</h3>
-          <button @click="closeBatchModal" class="text-gray-500 hover:text-gray-800">&times;</button>
+    <div v-if="showBatchModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="text-xl font-bold text-gray-900">批量新增資料</h3>
+          <button @click="closeBatchModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
         
-        <!-- Input Methods -->
-        <div class="mb-6">
-          <div class="flex space-x-4 mb-4">
-            <button 
-              @click="batchInputMethod = 'text'"
-              :class="[batchInputMethod === 'text' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
-              class="px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              貼上 JSON 文字
-            </button>
-            <button 
-              @click="batchInputMethod = 'file'"
-              :class="[batchInputMethod === 'file' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
-              class="px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              上傳 JSON 檔案
-            </button>
+        <div class="modal-body">
+          <!-- Input Methods -->
+          <div class="mb-6">
+            <div class="flex space-x-4 mb-4">
+              <button 
+                @click="batchInputMethod = 'text'"
+                :class="[batchInputMethod === 'text' ? 'btn btn-primary' : 'btn btn-secondary']"
+                class="px-4 py-1"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>貼上 JSON 文字</span>
+              </button>
+              <button 
+                @click="batchInputMethod = 'file'"
+                :class="[batchInputMethod === 'file' ? 'btn btn-primary' : 'btn btn-secondary']"
+                class="px-4 py-1"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <span>上傳 JSON 檔案</span>
+              </button>
+            </div>
           </div>
           
           <!-- Text Input -->
@@ -308,7 +592,7 @@
         </div>
         
         <!-- Preview -->
-        <div v-if="batchPreview.length > 0" class="mb-6">
+        <div v-if="batchPreview.length > 0" class="mb-6 mx-4">
           <h4 class="text-lg font-semibold mb-3">預覽 ({{ batchPreview.length }} 筆資料)</h4>
           <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
             <div v-for="(item, index) in batchPreview" :key="index" class="mb-3 p-3 bg-white rounded border">
@@ -330,7 +614,7 @@
         </div>
         
         <!-- Actions -->
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center mb-4 mx-4">
           <div class="flex space-x-3">
             <button 
               @click="parseBatchData" 
@@ -407,6 +691,10 @@ const batchJsonText = ref('')
 const batchPreview = ref([])
 const batchError = ref('')
 const batchSubmitting = ref(false)
+
+// For Display Mode and Batch Operations
+const displayMode = ref('card') // 'card' or 'list'
+const selectedItems = ref([])
 
 const fetchDatasets = async () => {
   loading.value = true
@@ -743,6 +1031,66 @@ const submitBatchData = async () => {
   }
 }
 
+// Batch Operations Functions
+const toggleSelectAll = () => {
+  if (selectedItems.value.length === datasets.value.length) {
+    selectedItems.value = []
+  } else {
+    selectedItems.value = datasets.value.map(item => item.id)
+  }
+}
+
+const handleBatchDelete = async () => {
+  if (selectedItems.value.length === 0) {
+    toast.error('請選擇要刪除的項目')
+    return
+  }
+  
+  const confirmed = await confirm(
+    '批量刪除確認', 
+    `確定要刪除選中的 ${selectedItems.value.length} 筆資料嗎？此操作無法復原。`
+  )
+  if (!confirmed) return
+  
+  try {
+    const promises = selectedItems.value.map(id => 
+      instance.delete(`/api/v1/datasets/${id}`)
+    )
+    
+    await Promise.all(promises)
+    
+    toast.success(`成功刪除 ${selectedItems.value.length} 筆資料`)
+    selectedItems.value = []
+    await fetchDatasets() // Refresh the list
+    
+  } catch (err) {
+    const errorMsg = `批量刪除失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    toast.error(errorMsg)
+    console.error('批量刪除失敗:', err)
+  }
+}
+
+// Status Helper Functions
+const getStatusText = (status) => {
+  const statusMap = {
+    'pending': '待審核',
+    'reviewing': '審核中',
+    'done': '已完成',
+    'regenerating': '重新生成中'
+  }
+  return statusMap[status] || status
+}
+
+const getStatusBadgeClass = (status) => {
+  const classMap = {
+    'pending': 'bg-blue-100 text-blue-800',
+    'reviewing': 'bg-yellow-100 text-yellow-800',
+    'done': 'bg-green-100 text-green-800',
+    'regenerating': 'bg-orange-100 text-orange-800'
+  }
+  return classMap[status] || 'bg-gray-100 text-gray-800'
+}
+
 onMounted(fetchDatasets)
 
 // 組件卸載時清理輪詢
@@ -752,6 +1100,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Text truncation utilities */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -771,5 +1120,171 @@ onUnmounted(() => {
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Button system */
+.btn {
+  @apply inline-flex items-center justify-center space-x-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm;
+}
+
+.btn-secondary {
+  @apply bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500 shadow-sm;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm;
+}
+
+.btn-warning {
+  @apply bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 shadow-sm;
+}
+
+/* Toggle button system */
+.btn-toggle-active {
+  @apply bg-white text-gray-800 shadow-sm;
+}
+
+.btn-toggle-inactive {
+  @apply text-gray-600 hover:text-gray-800 hover:bg-gray-50;
+}
+
+/* Card system */
+.card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200;
+}
+
+.card-header {
+  @apply p-4 border-b border-gray-200;
+}
+
+.card-body {
+  @apply p-4;
+}
+
+.card-footer {
+  @apply p-4 border-t border-gray-200 bg-gray-50;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-2 py-1 text-xs font-medium rounded-full;
+}
+
+.status-pending {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-reviewing {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-done {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-regenerating {
+  @apply bg-orange-100 text-orange-800;
+}
+
+/* Custom checkbox styles */
+input[type="checkbox"]:indeterminate {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* Modal system */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto;
+}
+
+.modal-header {
+  @apply flex justify-between items-center p-6 border-b border-gray-200;
+}
+
+.modal-body {
+  @apply p-6;
+}
+
+.modal-footer {
+  @apply flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50;
+}
+
+/* Form system */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700;
+}
+
+.form-input {
+  @apply mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.form-textarea {
+  @apply mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+/* Loading animations */
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-gray-200 border-t-blue-600;
+}
+
+/* Display mode transition animations */
+.display-mode-enter-active,
+.display-mode-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.display-mode-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+.display-mode-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+}
+
+.display-mode-enter-to,
+.display-mode-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .btn-sm {
+    @apply px-2 py-1 text-xs;
+  }
+  
+  .card-header,
+  .card-body,
+  .card-footer {
+    @apply p-3;
+  }
 }
 </style> 
