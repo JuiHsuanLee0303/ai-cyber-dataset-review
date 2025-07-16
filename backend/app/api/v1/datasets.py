@@ -9,6 +9,7 @@ from app.database.base import get_db
 from app.api.v1.auth import get_current_user
 from app.api.v1.users import get_current_admin_user
 from app.services.regeneration import regenerate_dataset
+from app.services.ollama_client import OllamaClient
 
 router = APIRouter()
 
@@ -18,6 +19,63 @@ def create_raw_dataset(
     db: Session = Depends(get_db),
     admin_user: models.User = Depends(get_current_admin_user)
 ):
+    return crud.create_raw_dataset(db=db, dataset=dataset)
+
+@router.post("/generate-from-regulations", response_model=schemas.GeneratedDataset)
+async def generate_dataset_from_regulations(
+    request: schemas.GenerateFromRegulationsRequest,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Generate a new dataset from selected legal regulations using Ollama.
+    Only accessible by admin users.
+    """
+    try:
+        # Get Ollama configuration
+        model_setting = crud.get_setting(db, "ollama_model")
+        url_setting = crud.get_setting(db, "ollama_url")
+
+        model_name = model_setting.value if model_setting else "llama3"
+        ollama_url = url_setting.value if url_setting else "http://ollama:11434"
+
+        # Create Ollama client
+        ollama_client = OllamaClient(host=ollama_url, model=model_name)
+        
+        # Get selected legal articles with full content
+        selected_articles = []
+        article_contents = []
+        for article_id in request.selected_article_ids:
+            article = db.query(models.LegalArticle).filter(models.LegalArticle.id == article_id).first()
+            if article:
+                selected_articles.append(f"{article.title}第{article.number}條")
+                article_contents.append(f"{article.title}第{article.number}條：{article.content}")
+        
+        if not selected_articles:
+            raise HTTPException(status_code=400, detail="請選擇至少一個法規條文")
+        
+        # Generate structured dataset with new prompt
+        generated_data = await ollama_client.generate_from_regulations(article_contents)
+        
+        # Add source to the generated data
+        generated_data["source"] = selected_articles
+        
+        return schemas.GeneratedDataset(**generated_data)
+        
+    except Exception as e:
+        print(f"Error generating dataset: {e}")
+        raise HTTPException(status_code=500, detail=f"生成資料失敗: {str(e)}")
+
+@router.post("/confirm-generated", response_model=schemas.RawDataset, status_code=status.HTTP_201_CREATED)
+def confirm_generated_dataset(
+    dataset: schemas.RawDatasetCreate,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Confirm and save a generated dataset to the database.
+    Only accessible by admin users.
+    """
     return crud.create_raw_dataset(db=db, dataset=dataset)
 
 @router.get("/", response_model=List[schemas.RawDatasetWithStats])

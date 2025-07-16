@@ -136,3 +136,16 @@ class LegalArticleCreate(LegalArticleBase):
 class LegalArticle(LegalArticleBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+# --- Dataset Generation Schemas ---
+
+class GenerateFromRegulationsRequest(BaseModel):
+    selected_article_ids: List[int]
+
+class GeneratedDataset(BaseModel):
+    instruction: str
+    input: Optional[str] = None
+    output: str
+    system: Optional[str] = None
+    history: List[Dict[str, str]] = []
+    source: List[str] = []

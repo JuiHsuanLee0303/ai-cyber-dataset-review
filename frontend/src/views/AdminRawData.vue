@@ -58,6 +58,16 @@
                 </svg>
                 <span>批量新增</span>
               </button>
+              
+              <button 
+                @click="openGenerateModal()" 
+                class="btn btn-info btn-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>從法規生成</span>
+              </button>
             </div>
             
             <!-- Display Mode Toggle -->
@@ -645,6 +655,208 @@
         </div>
       </div>
     </div>
+
+    <!-- Generate from Regulations Modal -->
+    <div v-if="showGenerateModal" class="modal-overlay">
+      <div class="modal-content max-w-6xl">
+        <div class="modal-header">
+          <h3 class="text-xl font-bold text-gray-900">從法規生成資料</h3>
+          <button @click="closeGenerateModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Step 1: Select Regulations -->
+          <div v-if="generateStep === 1" class="space-y-6">
+            <div class="flex items-center space-x-2 mb-4">
+              <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <h4 class="text-lg font-semibold text-gray-900">選擇法規條文</h4>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Available Regulations -->
+              <div class="space-y-4">
+                <h5 class="font-medium text-gray-700">可選法規 ({{ availableRegulations.length }})</h5>
+                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div v-if="regulationsLoading" class="flex items-center justify-center py-8">
+                    <div class="loading-spinner w-6 h-6"></div>
+                    <span class="ml-2 text-gray-600">載入法規中...</span>
+                  </div>
+                  <div v-else-if="availableRegulations.length === 0" class="text-center py-8 text-gray-500">
+                    沒有可用的法規
+                  </div>
+                  <div v-else class="space-y-2">
+                    <div 
+                      v-for="regulation in availableRegulations" 
+                      :key="regulation.id"
+                      @click="toggleRegulationSelection(regulation.id)"
+                      :class="[
+                        'p-3 rounded-lg border cursor-pointer transition-all duration-200',
+                        selectedRegulations.includes(regulation.id)
+                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      ]"
+                    >
+                      <div class="flex items-start space-x-3">
+                        <input 
+                          type="checkbox" 
+                          :checked="selectedRegulations.includes(regulation.id)"
+                          class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          @click.stop
+                          @change="toggleRegulationSelection(regulation.id)"
+                        />
+                        <div class="flex-1">
+                          <div class="font-medium text-gray-900">{{ regulation.title }}第{{ regulation.number }}條</div>
+                          <div class="text-sm text-gray-600 mt-1 line-clamp-2">{{ regulation.content }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Selected Regulations -->
+              <div class="space-y-4">
+                <h5 class="font-medium text-gray-700">已選法規 ({{ selectedRegulations.length }})</h5>
+                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-blue-50">
+                  <div v-if="selectedRegulations.length === 0" class="text-center py-8 text-gray-500">
+                    請選擇法規條文
+                  </div>
+                  <div v-else class="space-y-3">
+                    <div 
+                      v-for="regulationId in selectedRegulations" 
+                      :key="regulationId"
+                      class="p-3 bg-white rounded-lg border border-blue-200"
+                    >
+                      <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                          <div class="font-medium text-gray-900">
+                            {{ getRegulationById(regulationId)?.title }}第{{ getRegulationById(regulationId)?.number }}條
+                          </div>
+                          <div class="text-sm text-gray-600 mt-1 line-clamp-2">
+                            {{ getRegulationById(regulationId)?.content }}
+                          </div>
+                        </div>
+                        <button 
+                          @click="removeRegulationSelection(regulationId)"
+                          class="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+                         <!-- Generate Button -->
+             <div class="flex justify-center pt-6 border-t border-gray-200">
+               <button 
+                 @click="generateData" 
+                 :disabled="selectedRegulations.length === 0 || generating"
+                 class="btn btn-primary px-8 py-3"
+               >
+                 <svg v-if="generating" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 </svg>
+                 <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                 </svg>
+                 <span>{{ generating ? '生成中...' : '生成資料' }}</span>
+               </button>
+             </div>
+          </div>
+          
+          <!-- Step 2: Generated Result -->
+          <div v-if="generateStep === 2" class="space-y-6">
+            <div class="flex items-center space-x-2 mb-4">
+              <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <h4 class="text-lg font-semibold text-gray-900">生成結果</h4>
+            </div>
+            
+            <div v-if="generating" class="flex flex-col items-center justify-center py-12">
+              <div class="loading-spinner w-12 h-12"></div>
+              <p class="mt-4 text-lg font-medium text-gray-700">正在生成資料...</p>
+              <p class="mt-2 text-sm text-gray-500">請稍候，AI正在根據選取的法規生成內容</p>
+            </div>
+            
+            <div v-else-if="generatedData" class="space-y-6">
+              <!-- Generated Content -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <h5 class="font-medium text-gray-700">生成的內容</h5>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">指令 (Instruction)</label>
+                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.instruction }}</div>
+                    </div>
+                    <div v-if="generatedData.input">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">輸入 (Input)</label>
+                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.input }}</div>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">輸出 (Output)</label>
+                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800 whitespace-pre-wrap">{{ generatedData.output }}</div>
+                    </div>
+                    <div v-if="generatedData.system">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
+                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.system }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="space-y-4">
+                  <h5 class="font-medium text-gray-700">資料來源</h5>
+                  <div class="space-y-3">
+                    <div 
+                      v-for="source in generatedData.source" 
+                      :key="source"
+                      class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+                    >
+                      <div class="text-sm text-gray-800">{{ source }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="flex justify-center space-x-4 pt-6 border-t border-gray-200">
+                <button 
+                  @click="regenerateData" 
+                  :disabled="generating"
+                  class="btn btn-warning px-4 py-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  <span>重新生成</span>
+                </button>
+                <button 
+                  @click="confirmGeneratedData" 
+                  :disabled="confirming"
+                  class="btn btn-success px-4 py-2"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span>{{ confirming ? '確認中...' : '確認加入' }}</span>
+                </button>
+                <button @click="closeGenerateModal" class="btn btn-secondary px-4 py-2">
+                  <span>取消</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -695,6 +907,16 @@ const batchSubmitting = ref(false)
 // For Display Mode and Batch Operations
 const displayMode = ref('card') // 'card' or 'list'
 const selectedItems = ref([])
+
+// For Generate from Regulations Modal
+const showGenerateModal = ref(false)
+const generateStep = ref(1) // 1 for select, 2 for generate
+const availableRegulations = ref([])
+const selectedRegulations = ref([])
+const regulationsLoading = ref(false)
+const generating = ref(false)
+const generatedData = ref(null)
+const confirming = ref(false)
 
 const fetchDatasets = async () => {
   loading.value = true
@@ -1091,6 +1313,136 @@ const getStatusBadgeClass = (status) => {
   return classMap[status] || 'bg-gray-100 text-gray-800'
 }
 
+// Generate from Regulations Functions
+const fetchRegulations = async () => {
+  regulationsLoading.value = true
+  try {
+    const response = await instance.get('/api/v1/legal-articles/')
+    availableRegulations.value = response.data
+  } catch (err) {
+    error.value = `無法獲取法規列表: ${err.response?.data?.detail || '未知錯誤'}`
+    toast.error(error.value)
+  } finally {
+    regulationsLoading.value = false
+  }
+}
+
+const openGenerateModal = () => {
+  generateStep.value = 1
+  selectedRegulations.value = []
+  fetchRegulations()
+  showGenerateModal.value = true
+}
+
+const closeGenerateModal = () => {
+  showGenerateModal.value = false
+  generateStep.value = 1
+  generatedData.value = null
+  confirming.value = false
+}
+
+const toggleRegulationSelection = (id) => {
+  const index = selectedRegulations.value.indexOf(id)
+  if (index > -1) {
+    selectedRegulations.value.splice(index, 1)
+  } else {
+    selectedRegulations.value.push(id)
+  }
+}
+
+const removeRegulationSelection = (id) => {
+  const index = selectedRegulations.value.indexOf(id)
+  if (index > -1) {
+    selectedRegulations.value.splice(index, 1)
+  }
+}
+
+const getRegulationById = (id) => {
+  return availableRegulations.value.find(r => r.id === id)
+}
+
+const generateData = async () => {
+  if (selectedRegulations.value.length === 0) {
+    toast.error('請選擇至少一個法規條文')
+    return
+  }
+
+  generating.value = true
+  generatedData.value = null
+  generateStep.value = 2
+  
+  try {
+    const payload = {
+      selected_article_ids: selectedRegulations.value
+    }
+    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload)
+    generatedData.value = response.data
+  } catch (err) {
+    error.value = `生成資料失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    toast.error(error.value)
+    console.error('生成資料失敗:', err)
+    generateStep.value = 1
+  } finally {
+    generating.value = false
+  }
+}
+
+const regenerateData = async () => {
+  if (!generatedData.value) {
+    toast.error('請先生成資料')
+    return
+  }
+
+  generating.value = true
+  generatedData.value = null
+  
+  try {
+    const payload = {
+      selected_article_ids: selectedRegulations.value
+    }
+    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload)
+    generatedData.value = response.data
+    toast.success('資料重新生成完成！')
+  } catch (err) {
+    const errorMsg = `重新生成失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
+    console.error('重新生成失敗:', err)
+  } finally {
+    generating.value = false
+  }
+}
+
+const confirmGeneratedData = async () => {
+  if (!generatedData.value) {
+    toast.error('請先生成資料')
+    return
+  }
+
+  confirming.value = true
+  try {
+    const payload = {
+      instruction: generatedData.value.instruction,
+      input: generatedData.value.input,
+      output: generatedData.value.output,
+      system: generatedData.value.system,
+      history: generatedData.value.history,
+      source: generatedData.value.source
+    }
+    const response = await instance.post('/api/v1/datasets/confirm-generated', payload)
+    toast.success('資料已確認加入！')
+    closeGenerateModal()
+    await fetchDatasets() // Refresh the list
+  } catch (err) {
+    const errorMsg = `確認加入失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
+    console.error('確認加入失敗:', err)
+  } finally {
+    confirming.value = false
+  }
+}
+
 onMounted(fetchDatasets)
 
 // 組件卸載時清理輪詢
@@ -1155,6 +1507,10 @@ onUnmounted(() => {
 
 .btn-warning {
   @apply bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 shadow-sm;
+}
+
+.btn-info {
+  @apply bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm;
 }
 
 /* Toggle button system */

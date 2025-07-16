@@ -86,80 +86,155 @@ class OllamaClient:
             for i, src in enumerate(source, 1):
                 prompt_parts.append(f"{i}. {src}")
         
-        # 5. Rejection reasons and improvement guidance
+        # 5. Rejection reasons if provided
         if rejection_reasons and len(rejection_reasons) > 0:
             prompt_parts.append("## 需要改進的地方")
             for i, reason in enumerate(rejection_reasons, 1):
                 prompt_parts.append(f"{i}. {reason}")
-            
-            prompt_parts.append("""
-## 改進要求
-請根據上述問題進行改進，確保：
-1. 內容準確且符合資安法規
-2. 實用且可執行
-3. 專業水準高
-4. 沒有錯誤或誤導性資訊""")
         
-        # 6. Output format requirement
-        prompt_parts.append("""
-## 輸出格式
-請嚴格按照以下 JSON 格式輸出，確保 JSON 格式正確：
-
-{
-  "instruction": "改進後的指令，清楚明確且與資安相關",
-  "input": "相關的輸入內容（如果需要的話）",
-  "output": "高品質的輸出內容，符合資安法規要求且實用"
-}""")
+        # 6. Final instruction
+        prompt_parts.append("## 生成要求")
+        prompt_parts.append("請根據上述資訊，生成一個完整的指令微調資料集項目。確保：")
+        prompt_parts.append("1. 指令清楚明確，與資安相關")
+        prompt_parts.append("2. 輸入內容提供適當的上下文")
+        prompt_parts.append("3. 輸出內容準確、實用且符合法規要求")
+        prompt_parts.append("4. 如果提供了拒絕原因，請針對這些問題進行改進")
         
+        # Combine all parts
         full_prompt = "\n\n".join(prompt_parts)
         
         try:
-            print(f"Generating structured dataset with optimized prompt...")
             response = await self.generate(full_prompt)
             
-            # Try to parse JSON response
+            # Parse JSON response
+            import json
             try:
-                # Clean the response to extract JSON
-                response_clean = response.strip()
-                
-                # Find JSON object in the response
-                start_idx = response_clean.find('{')
-                end_idx = response_clean.rfind('}') + 1
-                
-                if start_idx != -1 and end_idx > start_idx:
-                    json_str = response_clean[start_idx:end_idx]
-                    parsed_response = json.loads(json_str)
-                    
-                    # Validate required fields
-                    if "instruction" not in parsed_response or "output" not in parsed_response:
-                        raise ValueError("Missing required fields in response")
-                    
-                    return {
-                        "instruction": parsed_response.get("instruction", instruction),
-                        "input": parsed_response.get("input", input_text),
-                        "output": parsed_response.get("output", "")
-                    }
+                # Try to extract JSON from the response
+                json_start = response.find('{')
+                json_end = response.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    json_str = response[json_start:json_end]
+                    result = json.loads(json_str)
                 else:
-                    raise ValueError("No JSON object found in response")
-                    
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"Failed to parse JSON response: {e}")
+                    # Fallback: try to parse the entire response
+                    result = json.loads(response)
+                
+                # Ensure all required fields are present
+                if "instruction" not in result:
+                    result["instruction"] = instruction
+                if "input" not in result:
+                    result["input"] = input_text or ""
+                if "output" not in result:
+                    result["output"] = "無法生成輸出內容"
+                
+                return result
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing error: {e}")
                 print(f"Raw response: {response}")
                 
-                # Fallback: return structured response with original instruction
+                # Fallback: return structured response
                 return {
                     "instruction": instruction,
-                    "input": input_text,
-                    "output": response
+                    "input": input_text or "",
+                    "output": response.strip(),
+                    "system": system_prompt or "",
+                    "history": [],
+                    "source": source or []
                 }
                 
         except Exception as e:
-            print(f"Error in structured generation: {e}")
-            return {
-                "instruction": instruction,
-                "input": input_text,
-                "output": f"Error: Failed to generate structured content - {str(e)}"
-            }
+            print(f"Generation error: {e}")
+            raise e
+
+    async def generate_from_regulations(self, article_contents: List[str]) -> Dict[str, Any]:
+        """
+        Generate a complete dataset from legal regulations using the new prompt.
+        Returns a dictionary with instruction, input, output, system, history, and source fields.
+        """
+        
+        # Build the prompt for regulation-based generation
+        prompt_parts = []
+        
+        # 1. System context and role definition
+        system_context = """你是一位資安專家，專門協助生成高品質的指令微調資料集。你的任務是根據提供的法律條文，撰寫相對應的問答集。
+
+請嚴格按照以下 JSON 格式輸出，不要包含任何其他文字：
+{
+  "instruction": "明確的指令內容",
+  "input": "輸入內容（如果有的話）",
+  "output": "期望的輸出內容",
+  "system": "系統提示內容"
+}"""
+        
+        prompt_parts.append(system_context)
+        
+        # 2. Legal articles content
+        prompt_parts.append("## 法律條文")
+        for i, content in enumerate(article_contents, 1):
+            prompt_parts.append(f"{i}. {content}")
+        
+        # 3. Generation requirements
+        prompt_parts.append("## 生成要求")
+        prompt_parts.append("請依照附上的法律條文撰寫相對應的問答集，其中input的使用者為不具有資安管理專業的用戶。請以簡單明瞭的方式撰寫instruction、input、output、system、history、source。")
+        prompt_parts.append("")
+        prompt_parts.append("要求：")
+        prompt_parts.append("1. instruction：清楚明確的指令，讓AI知道要執行什麼任務")
+        prompt_parts.append("2. input：模擬一般用戶的提問，使用簡單易懂的語言")
+        prompt_parts.append("3. output：專業且準確的回答，符合法規要求")
+        prompt_parts.append("4. system：設定AI的角色和行為準則")
+        prompt_parts.append("5. history：保持為空陣列")
+        prompt_parts.append("6. 確保內容與選取的法規條文相關且準確")
+        
+        # Combine all parts
+        full_prompt = "\n\n".join(prompt_parts)
+        
+        try:
+            response = await self.generate(full_prompt)
+            
+            # Parse JSON response
+            import json
+            try:
+                # Try to extract JSON from the response
+                json_start = response.find('{')
+                json_end = response.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    json_str = response[json_start:json_end]
+                    result = json.loads(json_str)
+                else:
+                    # Fallback: try to parse the entire response
+                    result = json.loads(response)
+                
+                # Ensure all required fields are present
+                if "instruction" not in result:
+                    result["instruction"] = "請根據相關法規提供建議"
+                if "input" not in result:
+                    result["input"] = ""
+                if "output" not in result:
+                    result["output"] = "無法生成輸出內容"
+                if "system" not in result:
+                    result["system"] = "你是一位資安專家，專門協助解答資安相關問題"
+                if "history" not in result:
+                    result["history"] = []
+                
+                return result
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing error: {e}")
+                print(f"Raw response: {response}")
+                
+                # Fallback: return structured response
+                return {
+                    "instruction": "請根據相關法規提供建議",
+                    "input": "",
+                    "output": response.strip(),
+                    "system": "你是一位資安專家，專門協助解答資安相關問題",
+                    "history": []
+                }
+                
+        except Exception as e:
+            print(f"Generation error: {e}")
+            raise e
 
 # Example of how to use it (optional, for direct testing)
 async def main():
