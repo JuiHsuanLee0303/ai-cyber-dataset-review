@@ -173,6 +173,63 @@ def get_global_stats(db: Session) -> schemas.GlobalStats:
         total_rejects=total_rejects
     )
 
+def get_user_stats(db: Session, user_id: int) -> schemas.GlobalStats:
+    """獲取特定用戶的統計數據"""
+    total_reviews = db.query(func.count(models.ReviewLog.id)).filter(models.ReviewLog.reviewer_id == user_id).scalar()
+    
+    total_accepts = db.query(func.count(models.ReviewLog.id)).filter(
+        models.ReviewLog.reviewer_id == user_id,
+        models.ReviewLog.result == 'ACCEPT'
+    ).scalar()
+    
+    total_rejects = db.query(func.count(models.ReviewLog.id)).filter(
+        models.ReviewLog.reviewer_id == user_id,
+        models.ReviewLog.result == 'REJECT'
+    ).scalar()
+
+    # 對於個人統計，總資料集數為該用戶審核過的資料集數
+    total_datasets = db.query(func.count(func.distinct(models.ReviewLog.dataset_id))).filter(
+        models.ReviewLog.reviewer_id == user_id
+    ).scalar()
+
+    return schemas.GlobalStats(
+        total_datasets=total_datasets,
+        total_reviews=total_reviews,
+        total_accepts=total_accepts,
+        total_rejects=total_rejects
+    )
+
+def get_user_review_activity(db: Session, user_id: int, days: int = 30) -> list[schemas.ReviewActivity]:
+    """獲取特定用戶的審核活動"""
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=days - 1)
+
+    results = (
+        db.query(
+            func.date(models.ReviewLog.timestamp).label('date'),
+            func.count(models.ReviewLog.id).label('count')
+        )
+        .filter(
+            models.ReviewLog.reviewer_id == user_id,
+            func.date(models.ReviewLog.timestamp).between(start_date, end_date)
+        )
+        .group_by('date')
+        .order_by('date')
+        .all()
+    )
+    
+    # Create a map of dates to counts
+    results_map = {str(r.date): r.count for r in results}
+
+    # Fill in missing dates with zero counts
+    activity = []
+    for i in range(days):
+        date = start_date + timedelta(days=i)
+        date_str = date.strftime("%Y-%m-%d")
+        activity.append(schemas.ReviewActivity(date=date_str, count=results_map.get(date_str, 0)))
+        
+    return activity
+
 def get_review_activity(db: Session, days: int = 30) -> list[schemas.ReviewActivity]:
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=days - 1)
@@ -221,6 +278,25 @@ def get_common_rejection_reasons(db: Session, limit: int = 5) -> list[schemas.Co
             func.count(models.ReviewLog.id).label('count')
         )
         .filter(models.ReviewLog.result == 'REJECT', models.ReviewLog.comment.isnot(None))
+        .group_by(models.ReviewLog.comment)
+        .order_by(func.count(models.ReviewLog.id).desc())
+        .limit(limit)
+        .all()
+    )
+    return [schemas.CommonRejectionReason(reason=r.comment, count=r.count) for r in results]
+
+def get_user_rejection_reasons(db: Session, user_id: int, limit: int = 5) -> list[schemas.CommonRejectionReason]:
+    """獲取特定用戶的常見拒絕理由"""
+    results = (
+        db.query(
+            models.ReviewLog.comment,
+            func.count(models.ReviewLog.id).label('count')
+        )
+        .filter(
+            models.ReviewLog.result == 'REJECT', 
+            models.ReviewLog.comment.isnot(None),
+            models.ReviewLog.reviewer_id == user_id
+        )
         .group_by(models.ReviewLog.comment)
         .order_by(func.count(models.ReviewLog.id).desc())
         .limit(limit)

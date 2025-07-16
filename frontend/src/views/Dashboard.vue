@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">統計儀表板</h1>
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">
+      {{ isAdmin ? '系統統計儀表板' : '個人統計儀表板' }}
+    </h1>
 
     <div v-if="loading" class="text-center">載入中...</div>
     <div v-else-if="error" class="text-red-500 bg-red-100 p-4 rounded-lg">{{ error }}</div>
@@ -9,19 +11,27 @@
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-sm font-medium text-gray-500">資料總筆數</h3>
+          <h3 class="text-sm font-medium text-gray-500">
+            {{ isAdmin ? '資料總筆數' : '已審核資料筆數' }}
+          </h3>
           <p class="mt-2 text-3xl font-semibold text-gray-900">{{ stats.global_stats.total_datasets }}</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-sm font-medium text-gray-500">總審核次數</h3>
+          <h3 class="text-sm font-medium text-gray-500">
+            {{ isAdmin ? '總審核次數' : '我的審核次數' }}
+          </h3>
           <p class="mt-2 text-3xl font-semibold text-gray-900">{{ stats.global_stats.total_reviews }}</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-sm font-medium text-gray-500">通過率</h3>
+          <h3 class="text-sm font-medium text-gray-500">
+            {{ isAdmin ? '通過率' : '我的通過率' }}
+          </h3>
           <p class="mt-2 text-3xl font-semibold text-green-600">{{ acceptanceRate }}%</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-sm font-medium text-gray-500">拒絕率</h3>
+          <h3 class="text-sm font-medium text-gray-500">
+            {{ isAdmin ? '拒絕率' : '我的拒絕率' }}
+          </h3>
           <p class="mt-2 text-3xl font-semibold text-red-600">{{ rejectionRate }}%</p>
         </div>
       </div>
@@ -30,7 +40,9 @@
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <!-- Review Activity Chart -->
         <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-lg font-medium text-gray-800 mb-4">過去 30 天審核活動</h3>
+          <h3 class="text-lg font-medium text-gray-800 mb-4">
+            {{ isAdmin ? '過去 30 天審核活動' : '過去 30 天我的審核活動' }}
+          </h3>
           <div class="relative h-96">
             <Bar v-if="reviewActivityData.labels.length" :data="reviewActivityData" :options="chartOptions" />
           </div>
@@ -38,8 +50,8 @@
 
         <!-- Top Lists -->
         <div class="lg:col-span-2 space-y-6">
-          <!-- Top Reviewers -->
-          <div class="bg-white p-6 rounded-lg shadow-md">
+          <!-- Top Reviewers (only for admin) -->
+          <div v-if="isAdmin" class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-medium text-gray-800 mb-4">頂尖審核員</h3>
             <ul class="space-y-3">
               <li v-for="reviewer in stats.top_reviewers" :key="reviewer.username" class="flex justify-between items-center text-sm">
@@ -52,7 +64,9 @@
 
           <!-- Common Rejection Reasons -->
           <div class="bg-white p-6 rounded-lg shadow-md">
-            <h3 class="text-lg font-medium text-gray-800 mb-4">常見拒絕理由</h3>
+            <h3 class="text-lg font-medium text-gray-800 mb-4">
+              {{ isAdmin ? '常見拒絕理由' : '我的拒絕理由' }}
+            </h3>
             <ul class="space-y-3">
               <li v-for="reason in stats.common_rejection_reasons" :key="reason.reason" class="flex justify-between items-center text-sm">
                 <span class="text-gray-700 truncate pr-4" :title="reason.reason">{{ reason.reason }}</span>
@@ -75,10 +89,15 @@ import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, Li
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
-const { instance } = useAuth();
+const { instance, state } = useAuth();
 const stats = ref(null);
 const loading = ref(true);
 const error = ref(null);
+
+// 計算屬性：判斷是否為管理員
+const isAdmin = computed(() => {
+  return state.user && state.user.role === 'admin';
+});
 
 const fetchStats = async () => {
   loading.value = true;
@@ -109,7 +128,7 @@ const reviewActivityData = computed(() => {
   return {
     labels: stats.value.review_activity.map(item => item.date.substring(5)), // Format date to "MM-DD"
     datasets: [{
-      label: '每日審核數量',
+      label: isAdmin.value ? '每日審核數量' : '我的每日審核數量',
       backgroundColor: '#4f46e5',
       borderColor: '#4f46e5',
       data: stats.value.review_activity.map(item => item.count),
