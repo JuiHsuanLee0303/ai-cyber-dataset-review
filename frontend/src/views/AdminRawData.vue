@@ -66,6 +66,18 @@
               <button @click="openModal(item)" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
                 編輯
               </button>
+              <button 
+                @click="handleManualRegenerate(item)" 
+                :disabled="item.review_status === 'regenerating'"
+                :class="[
+                  item.review_status === 'regenerating' 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-orange-600 hover:text-orange-900'
+                ]"
+                class="text-sm font-medium"
+              >
+                重新生成
+              </button>
               <button @click="handleDelete(item.id)" class="text-red-600 hover:text-red-900 text-sm font-medium">
                 刪除
               </button>
@@ -81,6 +93,29 @@
               :disabled="item.reject_count === 0"
             >
               拒絕: {{ item.reject_count }}
+            </button>
+          </div>
+          
+          <!-- Manual Regenerate Button -->
+          <div class="mt-3 pt-3 border-t border-gray-200">
+            <button 
+              @click="handleManualRegenerate(item)" 
+              :disabled="item.review_status === 'regenerating'"
+              :class="[
+                item.review_status === 'regenerating'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200'
+              ]"
+              class="w-full py-2 px-3 rounded-md border text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
+            >
+              <svg v-if="item.review_status === 'regenerating'" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>{{ item.review_status === 'regenerating' ? '重新生成中...' : '手動重新生成' }}</span>
             </button>
           </div>
         </div>
@@ -415,6 +450,37 @@ const closeRejectionModal = () => {
   showRejectionModal.value = false
   rejectionReasons.value = []
   selectedDataset.value = null
+}
+
+const handleManualRegenerate = async (item) => {
+  const confirmed = await confirm(
+    '手動重新生成確認', 
+    `確定要手動重新生成 ID ${item.id} 的資料嗎？此操作將使用 AI 重新生成內容。`
+  )
+  if (!confirmed) return
+  
+  try {
+    const response = await instance.post(`/api/v1/datasets/${item.id}/regenerate`)
+    toast.success('重新生成已開始，請稍候...')
+    
+    // 立即更新本地狀態為重新生成中
+    const datasetIndex = datasets.value.findIndex(d => d.id === item.id)
+    if (datasetIndex !== -1) {
+      datasets.value[datasetIndex].review_status = 'regenerating'
+    }
+    
+    // 如果尚未開始輪詢，則開始輪詢
+    if (!isPolling.value) {
+      startPolling()
+    }
+    
+    console.log('手動重新生成已啟動:', response.data)
+  } catch (err) {
+    const errorMsg = `手動重新生成失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
+    console.error('手動重新生成失敗:', err)
+  }
 }
 
 onMounted(fetchDatasets)

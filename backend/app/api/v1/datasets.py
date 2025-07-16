@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
@@ -8,6 +8,7 @@ from app.database import models
 from app.database.base import get_db
 from app.api.v1.auth import get_current_user
 from app.api.v1.users import get_current_admin_user
+from app.services.regeneration import regenerate_dataset
 
 router = APIRouter()
 
@@ -82,3 +83,35 @@ def read_final_datasets(
     """
     datasets = crud.get_final_datasets(db)
     return datasets
+
+@router.post("/{dataset_id}/regenerate", status_code=status.HTTP_202_ACCEPTED)
+def manual_regenerate_dataset(
+    dataset_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Manually trigger regeneration for a dataset.
+    Only accessible by admin users.
+    """
+    # Check if dataset exists
+    dataset = crud.get_raw_dataset(db, dataset_id=dataset_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    # Check if dataset is already regenerating
+    if dataset.review_status == "regenerating":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Dataset is already being regenerated"
+        )
+    
+    # Add regeneration task to background
+    background_tasks.add_task(regenerate_dataset, db, dataset_id)
+    
+    return {
+        "message": f"Regeneration started for dataset {dataset_id}",
+        "dataset_id": dataset_id,
+        "status": "regenerating"
+    }
