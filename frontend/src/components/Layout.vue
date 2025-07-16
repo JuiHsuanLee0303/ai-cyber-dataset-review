@@ -15,7 +15,7 @@
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
       ]"
     >
-      <div class="h-20 flex items-center justify-between px-4 border-b border-gray-700">
+      <div class="h-20 flex items-center justify-between ps-8 pe-4 border-b border-gray-700">
         <div class="flex items-center text-2xl font-bold">
           <span class="text-teal-400">AI</span><span class="text-white">Review</span>
         </div>
