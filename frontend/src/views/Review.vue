@@ -325,22 +325,102 @@
 
     <!-- 拒絕模態框 -->
     <div v-if="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <h3 class="text-base sm:text-lg font-semibold text-gray-900">拒絕原因</h3>
-          <p class="text-xs sm:text-sm text-gray-600 mt-1">請說明拒絕這筆資料的原因，這將幫助改進資料品質</p>
+          <p class="text-xs sm:text-sm text-gray-600 mt-1">請選擇常見拒絕理由並填寫詳細說明，這將幫助改進資料品質</p>
         </div>
-        <div class="p-4 sm:p-6">
-          <textarea 
-            v-model="rejectComment"
-            rows="4"
-            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
-            placeholder="請詳細說明拒絕原因，例如：指令不夠清楚、內容不符合法規要求、法規依據錯誤等..."
-          ></textarea>
+        
+        <div class="p-4 sm:p-6 space-y-6">
+          <!-- 常見拒絕理由選擇 -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-3">
+              常見拒絕理由 <span class="text-red-500">*</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div 
+                v-for="reason in commonReasons" 
+                :key="reason.id"
+                @click="toggleCommonReason(reason.id)"
+                :class="[
+                  'p-3 border-2 rounded-lg cursor-pointer transition-all duration-200',
+                  selectedCommonReasons.includes(reason.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                ]"
+              >
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0 mt-0.5">
+                    <div 
+                      :class="[
+                        'w-4 h-4 rounded border-2 flex items-center justify-center',
+                        selectedCommonReasons.includes(reason.id)
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-gray-300'
+                      ]"
+                    >
+                      <svg v-if="selectedCommonReasons.includes(reason.id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900">{{ reason.label }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ reason.description }}</div>
+                    <div class="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full" 
+                         :class="{
+                           'bg-blue-100 text-blue-800': reason.category === 'instruction',
+                           'bg-green-100 text-green-800': reason.category === 'output',
+                           'bg-red-100 text-red-800': reason.category === 'source',
+                           'bg-purple-100 text-purple-800': reason.category === 'input',
+                           'bg-yellow-100 text-yellow-800': reason.category === 'format',
+                           'bg-indigo-100 text-indigo-800': reason.category === 'content',
+                           'bg-orange-100 text-orange-800': reason.category === 'security',
+                           'bg-gray-100 text-gray-800': reason.category === 'other'
+                         }">
+                      {{ getCategoryLabel(reason.category) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="selectedCommonReasons.length === 0" class="mt-2 text-sm text-red-600">
+              請至少選擇一個拒絕理由
+            </div>
+          </div>
+
+          <!-- 詳細拒絕理由 -->
+          <div>
+            <label for="detailed-reason" class="block text-sm font-semibold text-gray-700 mb-3">
+              詳細拒絕理由 <span class="text-gray-500">(可選)</span>
+            </label>
+            <textarea 
+              id="detailed-reason"
+              v-model="detailedRejectReason"
+              rows="4"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
+              placeholder="請詳細說明拒絕原因，提供具體的改進建議..."
+            ></textarea>
+          </div>
+
+          <!-- 額外備註 -->
+          <div>
+            <label for="additional-comment" class="block text-sm font-semibold text-gray-700 mb-3">
+              額外備註 <span class="text-gray-500">(可選)</span>
+            </label>
+            <textarea 
+              id="additional-comment"
+              v-model="rejectComment"
+              rows="2"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
+              placeholder="如有其他需要說明的內容，請在此填寫..."
+            ></textarea>
+          </div>
         </div>
+        
         <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex justify-end space-x-2 sm:space-x-3">
           <button 
-            @click="showRejectModal = false" 
+            @click="cancelReject" 
             class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base"
           >
             取消
@@ -368,11 +448,77 @@ const toast = useToast()
 const loading = ref(true)
 const showRejectModal = ref(false)
 const rejectComment = ref('')
+const detailedRejectReason = ref('')
+const selectedCommonReasons = ref([])
 const datasets = ref([])
 const currentIndex = ref(0)
 const sourceDetails = ref({})
 const sourceLoading = ref({})
 const sourceErrors = ref({})
+
+// 常見拒絕理由列表
+const commonReasons = ref([
+  {
+    id: 'instruction_unclear',
+    label: '指令不夠清楚',
+    description: '指令描述模糊，無法明確理解要執行什麼任務',
+    category: 'instruction'
+  },
+  {
+    id: 'output_inaccurate',
+    label: '輸出內容不準確',
+    description: 'AI 回答內容有錯誤或不符合事實',
+    category: 'output'
+  },
+  {
+    id: 'output_not_helpful',
+    label: '輸出內容不實用',
+    description: '回答過於理論化，缺乏實務價值',
+    category: 'output'
+  },
+  {
+    id: 'regulation_incorrect',
+    label: '法規依據錯誤',
+    description: '引用的法規條文不正確或已過時',
+    category: 'source'
+  },
+  {
+    id: 'regulation_irrelevant',
+    label: '法規依據不相關',
+    description: '引用的法規與指令內容無關',
+    category: 'source'
+  },
+  {
+    id: 'input_inappropriate',
+    label: '輸入內容不適當',
+    description: '輸入內容與資安領域無關或不合適',
+    category: 'input'
+  },
+  {
+    id: 'format_inconsistent',
+    label: '格式不一致',
+    description: '資料格式與其他資料不一致',
+    category: 'format'
+  },
+  {
+    id: 'duplicate_content',
+    label: '內容重複',
+    description: '與其他資料內容重複或過於相似',
+    category: 'content'
+  },
+  {
+    id: 'sensitive_info',
+    label: '包含敏感資訊',
+    description: '內容包含機密或敏感資訊',
+    category: 'security'
+  },
+  {
+    id: 'other',
+    label: '其他原因',
+    description: '其他未列出的拒絕原因',
+    category: 'other'
+  }
+])
 
 const currentItem = computed(() => {
   if (datasets.value.length > 0 && currentIndex.value < datasets.value.length) {
@@ -478,14 +624,22 @@ const nextItem = async () => {
   }
 }
 
-const submitReview = async (result, comment = null) => {
+const submitReview = async (result, comment = null, commonReasons = null, detailedReason = null) => {
   if (!currentItem.value) return
   
   try {
-    await instance.post(`/api/v1/review/${currentItem.value.id}`, {
+    const reviewData = {
       result: result,
       comment: comment
-    })
+    }
+    
+    // 如果是拒絕，添加新的欄位
+    if (result === 'REJECT') {
+      reviewData.common_reasons = commonReasons || []
+      reviewData.detailed_reason = detailedReason || ''
+    }
+    
+    await instance.post(`/api/v1/review/${currentItem.value.id}`, reviewData)
     toast.success('審核結果已提交！');
     nextItem() // Move to the next item
   } catch (error) {
@@ -499,13 +653,67 @@ const handleAccept = () => {
 }
 
 const handleReject = () => {
-  if (!rejectComment.value) {
-    toast.warning('請填寫拒絕原因。');
+  if (selectedCommonReasons.value.length === 0) {
+    toast.warning('請至少選擇一個常見拒絕理由。');
     return
   }
-  submitReview('REJECT', rejectComment.value)
+  
+  // 構建完整的拒絕理由
+  const selectedReasonLabels = selectedCommonReasons.value.map(id => {
+    const reason = commonReasons.value.find(r => r.id === id)
+    return reason ? reason.label : id
+  }).join('、')
+  
+  let fullComment = `選擇的拒絕理由：${selectedReasonLabels}`
+  if (detailedRejectReason.value.trim()) {
+    fullComment += `\n\n詳細說明：${detailedRejectReason.value.trim()}`
+  }
+  if (rejectComment.value.trim()) {
+    fullComment += `\n\n額外備註：${rejectComment.value.trim()}`
+  }
+  
+  submitReview(
+    'REJECT', 
+    fullComment,
+    selectedCommonReasons.value,
+    detailedRejectReason.value.trim()
+  )
+  
+  // 重置表單
   showRejectModal.value = false
+  detailedRejectReason.value = ''
   rejectComment.value = ''
+  selectedCommonReasons.value = []
+}
+
+const cancelReject = () => {
+  showRejectModal.value = false
+  detailedRejectReason.value = ''
+  rejectComment.value = ''
+  selectedCommonReasons.value = []
+}
+
+const toggleCommonReason = (reasonId) => {
+  const index = selectedCommonReasons.value.indexOf(reasonId)
+  if (index > -1) {
+    selectedCommonReasons.value.splice(index, 1)
+  } else {
+    selectedCommonReasons.value.push(reasonId)
+  }
+}
+
+const getCategoryLabel = (category) => {
+  const categoryLabels = {
+    'instruction': '指令',
+    'output': '回答',
+    'source': '法規',
+    'input': '輸入',
+    'format': '格式',
+    'content': '內容',
+    'security': '安全',
+    'other': '其他'
+  }
+  return categoryLabels[category] || '未知'
 }
 
 onMounted(() => {

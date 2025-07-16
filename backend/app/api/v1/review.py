@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
+from typing import List
 
 from app import crud, schemas
 from app.database import models
@@ -8,6 +9,77 @@ from app.api.v1.auth import get_current_user
 from app.services.regeneration import regenerate_dataset
 
 router = APIRouter()
+
+# 常見拒絕理由列表
+COMMON_REJECTION_REASONS = [
+    {
+        "id": "instruction_unclear",
+        "label": "指令不夠清楚",
+        "description": "指令描述模糊，無法明確理解要執行什麼任務",
+        "category": "instruction"
+    },
+    {
+        "id": "output_inaccurate",
+        "label": "輸出內容不準確",
+        "description": "AI 回答內容有錯誤或不符合事實",
+        "category": "output"
+    },
+    {
+        "id": "output_not_helpful",
+        "label": "輸出內容不實用",
+        "description": "回答過於理論化，缺乏實務價值",
+        "category": "output"
+    },
+    {
+        "id": "regulation_incorrect",
+        "label": "法規依據錯誤",
+        "description": "引用的法規條文不正確或已過時",
+        "category": "source"
+    },
+    {
+        "id": "regulation_irrelevant",
+        "label": "法規依據不相關",
+        "description": "引用的法規與指令內容無關",
+        "category": "source"
+    },
+    {
+        "id": "input_inappropriate",
+        "label": "輸入內容不適當",
+        "description": "輸入內容與資安領域無關或不合適",
+        "category": "input"
+    },
+    {
+        "id": "format_inconsistent",
+        "label": "格式不一致",
+        "description": "資料格式與其他資料不一致",
+        "category": "format"
+    },
+    {
+        "id": "duplicate_content",
+        "label": "內容重複",
+        "description": "與其他資料內容重複或過於相似",
+        "category": "content"
+    },
+    {
+        "id": "sensitive_info",
+        "label": "包含敏感資訊",
+        "description": "內容包含機密或敏感資訊",
+        "category": "security"
+    },
+    {
+        "id": "other",
+        "label": "其他原因",
+        "description": "其他未列出的拒絕原因",
+        "category": "other"
+    }
+]
+
+@router.get("/common-reasons", response_model=List[schemas.CommonRejectionReason])
+def get_common_rejection_reasons():
+    """
+    Get list of common rejection reasons for reference.
+    """
+    return COMMON_REJECTION_REASONS
 
 def _extract_value(value):
     """Helper to handle both old ({'value': ...}) and new data formats."""

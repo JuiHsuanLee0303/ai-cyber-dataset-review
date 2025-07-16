@@ -88,7 +88,9 @@ def create_review_log(db: Session, dataset_id: int, reviewer_id: int, review: sc
         dataset_id=dataset_id,
         reviewer_id=reviewer_id,
         result=review.result.upper(),
-        comment=review.comment
+        comment=review.comment,
+        common_reasons=review.common_reasons or [],  # 新增
+        detailed_reason=review.detailed_reason  # 新增
     )
     db.add(db_review_log)
 
@@ -122,6 +124,8 @@ def get_rejection_reasons_for_dataset(db: Session, dataset_id: int):
         results.append(schemas.RejectionInfo(
             id=log.id,
             comment=log.comment,
+            common_reasons=log.common_reasons,  # 新增
+            detailed_reason=log.detailed_reason,  # 新增
             timestamp=log.timestamp,
             reviewer_username=log.reviewer.username
         ))

@@ -64,11 +64,22 @@ class RawDatasetWithStats(RawDataset):
 class ReviewCreate(BaseModel):
     result: str # "ACCEPT" or "REJECT"
     comment: Optional[str] = None
+    common_reasons: Optional[List[str]] = None  # 新增：常見拒絕理由列表
+    detailed_reason: Optional[str] = None  # 新增：詳細拒絕理由
+
+# --- Common Rejection Reasons Schema ---
+class CommonRejectionReason(BaseModel):
+    id: str
+    label: str
+    description: str
+    category: str
 
 # --- ReviewLog Schema for Rejection Info ---
 class RejectionInfo(BaseModel):
     id: int
     comment: Optional[str] = None
+    common_reasons: Optional[List[str]] = None  # 新增
+    detailed_reason: Optional[str] = None  # 新增
     timestamp: datetime
     reviewer_username: str
     model_config = ConfigDict(from_attributes=True)

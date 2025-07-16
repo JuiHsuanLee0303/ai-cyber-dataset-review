@@ -74,6 +74,8 @@ class ReviewLog(Base):
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     result = Column(Enum("ACCEPT", "REJECT", name="review_result_enum"), nullable=False)
     comment = Column(String)
+    common_reasons = Column(JSON, default=[])  # 新增：常見拒絕理由列表
+    detailed_reason = Column(Text)  # 新增：詳細拒絕理由
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     reviewer = relationship("User", back_populates="review_logs")
