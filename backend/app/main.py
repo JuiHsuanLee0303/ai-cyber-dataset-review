@@ -24,6 +24,7 @@ def get_cors_origins():
         "http://127.0.0.1:5173",
         "https://localhost:5173",
         "https://127.0.0.1:5173",
+        "https://ai-cyber-dataset-review.vercel.app"
     ]
     
     # 從環境變數獲取額外的 CORS 來源
