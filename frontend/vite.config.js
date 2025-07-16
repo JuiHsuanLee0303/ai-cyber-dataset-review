@@ -15,4 +15,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // 確保生產環境也能正確處理 API 請求
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'axios'],
+        },
+      },
+    },
+  },
+  define: {
+    // 確保環境變數在生產環境中可用
+    __VUE_OPTIONS_API__: true,
+    __VUE_PROD_DEVTOOLS__: false,
+  },
 }) 

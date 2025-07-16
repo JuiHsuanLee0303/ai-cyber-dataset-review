@@ -1,8 +1,24 @@
 import { reactive, readonly } from 'vue'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-console.log(API_URL)
+// 動態獲取 API URL
+const getApiUrl = () => {
+  // 如果設置了環境變數，使用環境變數
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  
+  // 如果是開發環境且在同一個域名下，使用相對路徑
+  if (import.meta.env.DEV && window.location.hostname === 'localhost') {
+    return ''
+  }
+  
+  // 否則使用當前域名
+  return window.location.origin
+}
+
+const API_URL = getApiUrl()
+console.log('API URL:', API_URL)
 
 const state = reactive({
   isLoggedIn: false,
@@ -15,7 +31,40 @@ const state = reactive({
 
 const instance = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // 10 秒超時
 })
+
+// 添加請求攔截器來處理錯誤
+instance.interceptors.request.use(
+  (config) => {
+    // 添加請求日誌
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`)
+    return config
+  },
+  (error) => {
+    console.error('Request error:', error)
+    return Promise.reject(error)
+  }
+)
+
+// 添加響應攔截器來處理錯誤
+instance.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    console.error('Response error:', error)
+    
+    // 檢查是否是 ngrok 錯誤頁面
+    if (error.response?.data && typeof error.response.data === 'string' && 
+        error.response.data.includes('<!DOCTYPE html>')) {
+      console.error('Received HTML instead of JSON - possible ngrok/proxy issue')
+      return Promise.reject(new Error('API 服務不可用，請檢查網路連接或服務狀態'))
+    }
+    
+    return Promise.reject(error)
+  }
+)
 
 // Function to refresh token
 const refreshToken = async () => {
