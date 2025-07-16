@@ -304,13 +304,45 @@ const fetchSettings = async () => {
 const testConnection = async () => {
   isTestingConnection.value = true
   testConnectionStatus.value = null
+  
   try {
-    await instance.post('/api/v1/ollama/test', { url: form.value.ollama_url })
-    testConnectionStatus.value = { isError: false, message: '連線成功！' }
+    // 檢查 URL 格式
+    if (!form.value.ollama_url) {
+      throw new Error('請輸入 Ollama URL')
+    }
+    
+    if (!form.value.ollama_url.startsWith('http://') && !form.value.ollama_url.startsWith('https://')) {
+      throw new Error('URL 必須以 http:// 或 https:// 開頭')
+    }
+    
+    const response = await instance.post('/api/v1/ollama/test', { 
+      url: form.value.ollama_url 
+    })
+    
+    testConnectionStatus.value = { 
+      isError: false, 
+      message: response.data.message || '連線成功！' 
+    }
     toast.success('連線成功！')
+    
+    // 連線成功後自動獲取模型列表
+    await fetchOllamaModels()
+    
   } catch (err) {
-    const errorMessage = err.response?.data?.detail || '連線失敗，請檢查 URL 或 Ollama 服務狀態。'
-    testConnectionStatus.value = { isError: true, message: errorMessage }
+    console.error('Ollama 連線測試失敗:', err)
+    
+    let errorMessage = '連線失敗，請檢查 URL 或 Ollama 服務狀態。'
+    
+    if (err.response?.data?.detail) {
+      errorMessage = err.response.data.detail
+    } else if (err.message) {
+      errorMessage = err.message
+    }
+    
+    testConnectionStatus.value = { 
+      isError: true, 
+      message: errorMessage 
+    }
     toast.error(errorMessage)
   } finally {
     isTestingConnection.value = false
@@ -322,14 +354,20 @@ const fetchOllamaModels = async () => {
     toast.info('請先輸入 Ollama URL。')
     return
   }
+  
   try {
-    const response = await instance.get('/api/v1/ollama/models', { params: { url: form.value.ollama_url } })
-    ollamaModels.value = response.data
+    const response = await instance.get('/api/v1/ollama/models')
+    ollamaModels.value = response.data || []
+    
     if (ollamaModels.value.length === 0) {
       toast.info('Ollama 服務中目前沒有可用的模型。')
+    } else {
+      toast.success(`成功獲取 ${ollamaModels.value.length} 個模型`)
     }
   } catch (error) {
-    toast.error('無法獲取模型列表。')
+    console.error('獲取模型列表失敗:', error)
+    const errorMessage = error.response?.data?.detail || '無法獲取模型列表。'
+    toast.error(errorMessage)
     ollamaModels.value = []
   }
 }

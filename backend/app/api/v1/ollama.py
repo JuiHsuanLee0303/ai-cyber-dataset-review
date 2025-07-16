@@ -29,74 +29,106 @@ async def get_ollama_url(db: Session = Depends(get_db)):
 @router.post("/test")
 async def test_ollama_connection(
     test_request: schemas.OllamaTestRequest,
-    admin_user: models.User = Depends(get_current_admin_user)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_admin_user)
 ):
     """
     Test connection to a given Ollama URL.
     """
     try:
+        # 驗證 URL 格式
+        if not test_request.url.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
+        
         async with httpx.AsyncClient() as client:
+            # 測試 Ollama 版本端點
             response = await client.get(f"{test_request.url}/api/version", timeout=10.0)
             response.raise_for_status()
-            return {"status": "success", "message": "Connection successful!", "version": response.json().get("version")}
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=400, detail=f"Failed to connect to Ollama: {e}")
+            
+            version_data = response.json()
+            return {
+                "status": "success", 
+                "message": "連線成功！", 
+                "version": version_data.get("version", "未知版本")
+            }
+    except httpx.ConnectError as e:
+        raise HTTPException(status_code=400, detail=f"無法連接到 Ollama 服務: {str(e)}")
+    except httpx.TimeoutException as e:
+        raise HTTPException(status_code=400, detail=f"連線超時: {str(e)}")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=400, detail=f"Ollama 服務回應錯誤: {e.response.status_code}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"發生未預期的錯誤: {str(e)}")
 
 @router.get("/models")
 async def get_ollama_models(
     ollama_url: str = Depends(get_ollama_url),
-    admin_user: models.User = Depends(get_current_admin_user)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_admin_user)
 ):
     """
     Get a list of local models from the configured Ollama instance.
     """
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{ollama_url}/api/tags")
+            response = await client.get(f"{ollama_url}/api/tags", timeout=10.0)
             response.raise_for_status()
-            return response.json().get("models", [])
+            models_data = response.json()
+            return models_data.get("models", [])
     except httpx.RequestError as e:
-        raise HTTPException(status_code=500, detail=f"Could not fetch models from Ollama: {e}")
+        raise HTTPException(status_code=500, detail=f"無法從 Ollama 獲取模型列表: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"獲取模型列表時發生錯誤: {str(e)}")
 
 @router.post("/pull")
 async def pull_ollama_model(
     pull_request: schemas.OllamaPullRequest,
     ollama_url: str = Depends(get_ollama_url),
-    admin_user: models.User = Depends(get_current_admin_user)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_admin_user)
 ):
     """
     Pull a model from the Ollama library. Streams the progress.
     """
     payload = {
-        "model": pull_request.model_name,
+        "name": pull_request.model_name,  # 修正：使用 "name" 而不是 "model"
         "stream": True
     }
     
     async def event_stream(url: str):
         try:
-            # Manually dump the payload to a JSON string to ensure correctness
             json_payload = json.dumps(payload)
             headers = {'Content-Type': 'application/json'}
 
             async with httpx.AsyncClient() as client:
-                async with client.stream(method="POST", url=f"{url}/api/pull", content=json_payload, headers=headers, timeout=None) as response:
+                async with client.stream(
+                    method="POST", 
+                    url=f"{url}/api/pull", 
+                    content=json_payload, 
+                    headers=headers, 
+                    timeout=None
+                ) as response:
                     response.raise_for_status()
                     async for chunk in response.aiter_bytes():
-                        # The response from Ollama is a stream of JSON objects, separated by newlines.
-                        # We yield each one as a server-sent event.
                         yield chunk
         except httpx.RequestError as e:
-            error_message = json.dumps({"status": "error", "message": f"Failed to connect to Ollama: {str(e)}"})
+            error_message = json.dumps({
+                "status": "error", 
+                "message": f"無法連接到 Ollama: {str(e)}"
+            })
             yield error_message.encode('utf-8')
         except httpx.HTTPStatusError as e:
-            error_message = json.dumps({"status": "error", "message": f"Ollama API returned an error: {e.response.status_code}", "details": e.response.text})
+            error_message = json.dumps({
+                "status": "error", 
+                "message": f"Ollama API 回應錯誤: {e.response.status_code}", 
+                "details": e.response.text
+            })
             yield error_message.encode('utf-8')
         except Exception as e:
-            # Catch any other unexpected errors in the stream and report them
-            error_message = json.dumps({"status": "error", "message": f"An unexpected error occurred during the pull process: {str(e)}"})
+            error_message = json.dumps({
+                "status": "error", 
+                "message": f"下載過程中發生未預期錯誤: {str(e)}"
+            })
             yield error_message.encode('utf-8')
-
 
     return StreamingResponse(event_stream(url=ollama_url), media_type="application/x-ndjson") 
