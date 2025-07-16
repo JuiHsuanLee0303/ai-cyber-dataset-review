@@ -14,6 +14,35 @@ from app.api.v1 import review as review_v1
 from app import crud, schemas
 from app.database.models import UserRole
 
+import os
+
+def get_cors_origins():
+    """動態獲取 CORS 允許的來源"""
+    origins = [
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173",
+        "https://localhost:5173",
+        "https://127.0.0.1:5173",
+        # 支援 ngrok 和其他 HTTPS 網址
+        "https://*.ngrok-free.app",
+        "https://*.ngrok.io",
+        "https://*.ngrok.app",
+        # 開發環境通配符（僅用於開發）
+        "http://*",
+        "https://*"
+    ]
+    
+    # 從環境變數獲取額外的 CORS 來源
+    cors_origins = os.getenv("CORS_ORIGINS", "")
+    if cors_origins:
+        origins.extend(cors_origins.split(","))
+    
+    # 開發環境允許所有來源
+    if os.getenv("ENVIRONMENT", "development") == "development":
+        origins.extend(["http://*", "https://*"])
+    
+    return origins
+
 def create_app() -> FastAPI:
     # --- Database Initialization ---
     def init_db():
@@ -68,7 +97,7 @@ def create_app() -> FastAPI:
     # CORS Middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=get_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
