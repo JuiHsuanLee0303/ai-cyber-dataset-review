@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+from typing import List
 
 from app import schemas
 from app.database import models
@@ -9,6 +10,9 @@ from app.security import get_password_hash
 
 def get_user_by_username(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
+
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
@@ -223,3 +227,46 @@ def get_common_rejection_reasons(db: Session, limit: int = 5) -> list[schemas.Co
         .all()
     )
     return [schemas.CommonRejectionReason(reason=r.comment, count=r.count) for r in results]
+
+
+# --- Legal Articles CRUD ---
+
+def create_legal_articles(db: Session, articles: List[schemas.LegalArticleCreate]):
+    db_articles = [models.LegalArticle(**article.model_dump()) for article in articles]
+    db.add_all(db_articles)
+    db.commit()
+    # We need to refresh each object individually if we want to return them with IDs
+    for article in db_articles:
+        db.refresh(article)
+    return db_articles
+
+def get_legal_articles(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.LegalArticle).offset(skip).limit(limit).all()
+
+def get_legal_article_by_title_and_number(db: Session, title: str, number: str):
+    return db.query(models.LegalArticle).filter(
+        models.LegalArticle.title == title,
+        models.LegalArticle.number == number
+    ).first()
+
+def update_legal_article(db: Session, article_id: int, article_update: schemas.LegalArticleCreate):
+    db_article = db.query(models.LegalArticle).filter(models.LegalArticle.id == article_id).first()
+    if not db_article:
+        return None
+    
+    update_data = article_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_article, key, value)
+
+    db.commit()
+    db.refresh(db_article)
+    return db_article
+
+def delete_legal_article(db: Session, article_id: int):
+    db_article = db.query(models.LegalArticle).filter(models.LegalArticle.id == article_id).first()
+    if not db_article:
+        return None
+        
+    db.delete(db_article)
+    db.commit()
+    return db_article

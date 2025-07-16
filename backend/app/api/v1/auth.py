@@ -40,9 +40,55 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         )
     
     access_token = security.create_access_token(
-        data={"sub": user.username, "role": user.role.value}
+        data={"sub": user.username, "role": user.role}
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = security.create_refresh_token(
+        data={"sub": user.username}
+    )
+    return {
+        "access_token": access_token, 
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@router.post("/refresh", response_model=schemas.Token)
+def refresh_access_token(
+    refresh_request: schemas.RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    payload = security.decode_refresh_token(refresh_request.refresh_token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    username: str = payload.get("sub")
+    if username is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = crud.get_user_by_username(db, username=username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    new_access_token = security.create_access_token(
+        data={"sub": user.username, "role": user.role}
+    )
+    
+    return {
+        "access_token": new_access_token,
+        "refresh_token": refresh_request.refresh_token, # Return the same refresh token
+        "token_type": "bearer"
+    }
 
 @router.get("/me", response_model=schemas.User)
 def read_users_me(current_user: models.User = Depends(get_current_user)):

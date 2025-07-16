@@ -36,5 +36,5 @@ def read_users(
     db: Session = Depends(get_db),
     admin_user: models.User = Depends(get_current_admin_user)
 ):
-    users = db.query(models.User).offset(skip).limit(limit).all()
+    users = crud.get_users(db, skip=skip, limit=limit)
     return users

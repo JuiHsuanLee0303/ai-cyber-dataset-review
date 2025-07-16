@@ -8,10 +8,13 @@ services:
       - ./data:/app/data
     environment:
       - DATABASE_URL=sqlite:///./data/test.db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     depends_on:
       - ollama
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build:

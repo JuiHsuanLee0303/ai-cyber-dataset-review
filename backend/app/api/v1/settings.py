@@ -11,7 +11,8 @@ router = APIRouter()
 
 def _extract_value(value):
     """Helper to handle both old ({'value': ...}) and new data formats."""
-    if isinstance(value, dict) and 'value' in value:
+    # The value from the DB can be a direct value or a JSON object {'value': ...}
+    if value and isinstance(value, dict) and 'value' in value:
         return value['value']
     return value
 

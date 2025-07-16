@@ -29,6 +29,9 @@
           <router-link to="/admin/data" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200">
             <span class="mx-4">最終資料集管理</span>
           </router-link>
+          <router-link to="/admin/legal-articles" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200">
+            <span class="mx-4">法規管理</span>
+          </router-link>
         </div>
       </nav>
     </aside>
@@ -52,12 +55,14 @@
         <router-view />
       </main>
     </div>
+    <ConfirmModal />
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
 import useAuth from '../store/auth'
+import ConfirmModal from './ConfirmModal.vue'
 
 const router = useRouter()
 const { state, logout } = useAuth()

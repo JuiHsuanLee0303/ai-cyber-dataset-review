@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import json
+import os
 
 from app import crud, schemas
 from app.database import models
@@ -12,13 +13,20 @@ from app.api.v1.users import get_current_admin_user
 router = APIRouter()
 
 async def get_ollama_url(db: Session = Depends(get_db)):
-    """Dependency to get the configured Ollama URL."""
+    """
+    Dependency to get the configured Ollama URL.
+    Priority: Environment Variable > DB Setting
+    """
+    env_url = os.environ.get("OLLAMA_BASE_URL")
+    if env_url:
+        return env_url
+    
     ollama_url_setting = crud.get_setting(db, "ollama_url")
     if not ollama_url_setting or not ollama_url_setting.value:
-        raise HTTPException(status_code=500, detail="Ollama URL is not configured.")
+        raise HTTPException(status_code=500, detail="Ollama URL is not configured in settings or environment variables.")
     return ollama_url_setting.value
 
-@router.post("/test-connection")
+@router.post("/test")
 async def test_ollama_connection(
     test_request: schemas.OllamaTestRequest,
     admin_user: models.User = Depends(get_current_admin_user)
@@ -66,10 +74,14 @@ async def pull_ollama_model(
         "stream": True
     }
     
-    async def event_stream():
+    async def event_stream(url: str):
         try:
+            # Manually dump the payload to a JSON string to ensure correctness
+            json_payload = json.dumps(payload)
+            headers = {'Content-Type': 'application/json'}
+
             async with httpx.AsyncClient() as client:
-                async with client.stream("POST", f"{ollama_url}/api/pull", json=payload, timeout=None) as response:
+                async with client.stream(method="POST", url=f"{url}/api/pull", content=json_payload, headers=headers, timeout=None) as response:
                     response.raise_for_status()
                     async for chunk in response.aiter_bytes():
                         # The response from Ollama is a stream of JSON objects, separated by newlines.
@@ -81,6 +93,10 @@ async def pull_ollama_model(
         except httpx.HTTPStatusError as e:
             error_message = json.dumps({"status": "error", "message": f"Ollama API returned an error: {e.response.status_code}", "details": e.response.text})
             yield error_message.encode('utf-8')
+        except Exception as e:
+            # Catch any other unexpected errors in the stream and report them
+            error_message = json.dumps({"status": "error", "message": f"An unexpected error occurred during the pull process: {str(e)}"})
+            yield error_message.encode('utf-8')
 
 
-    return StreamingResponse(event_stream(), media_type="application/x-ndjson") 
+    return StreamingResponse(event_stream(url=ollama_url), media_type="application/x-ndjson") 

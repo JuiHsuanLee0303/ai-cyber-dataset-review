@@ -84,7 +84,7 @@
               <button
                 type="button"
                 @click="pullModel"
-                :disabled="isPullingModel || !modelToPull"
+                :disabled="isPullingModel"
                 class="px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-teal-400 whitespace-nowrap"
               >
                 {{ isPullingModel ? '下載中...' : '下載' }}
@@ -117,7 +117,14 @@
         </div>
 
         <!-- Save Button -->
-        <div class="mt-8 flex justify-end">
+        <div class="mt-8 flex justify-end space-x-4">
+          <button
+            type="button"
+            @click="testAuth"
+            class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+          >
+            測試認證機制
+          </button>
           <button
             type="submit"
             :disabled="isSaving"
@@ -137,175 +144,205 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import useAuth from '../store/auth';
+import { ref, onMounted } from 'vue'
+import useAuth from '../store/auth'
+import { useToast } from 'vue-toastification'
 
-const { instance } = useAuth();
+const { instance, refreshToken } = useAuth()
+const toast = useToast()
 
+// Page States
+const loading = ref(true)
+const error = ref(null)
+const isSaving = ref(false)
+const successMessage = ref('')
+
+// Form and Settings
 const form = ref({
   rejection_threshold: 3,
-  ollama_model: 'llama3',
-  ollama_url: '',
-});
-const loading = ref(true);
-const isSaving = ref(false);
-const error = ref(null);
-const successMessage = ref('');
+  ollama_model: '',
+  ollama_url: 'http://host.docker.internal:11434'
+})
 
-// New state for Ollama interactions
-const isTestingConnection = ref(false);
-const testConnectionStatus = ref(null); // { isError: boolean, message: string }
-const ollamaModels = ref([]);
-const modelToPull = ref('');
-const isPullingModel = ref(false);
-const pullStatus = ref('');
+// Ollama Connection and Models
+const isTestingConnection = ref(false)
+const testConnectionStatus = ref(null) // { isError: boolean, message: string }
+const ollamaModels = ref([])
+const modelToPull = ref('')
+const isPullingModel = ref(false)
+const pullStatus = ref('')
 
 
 const fetchSettings = async () => {
-  loading.value = true;
-  error.value = null;
+  loading.value = true
+  error.value = null
   try {
-    const response = await instance.get('/api/v1/settings/');
-    form.value = response.data;
-    // After getting settings, fetch the models from the configured URL
-    await fetchOllamaModels();
+    const response = await instance.get('/api/v1/settings/')
+    form.value = response.data
+    if (form.value.ollama_url) {
+      await fetchOllamaModels()
+    }
   } catch (err) {
-    error.value = '無法獲取系統設定。';
-    console.error(err);
+    const errorMessage = err.response?.data?.detail || '無法載入系統設定。'
+    error.value = errorMessage
+    toast.error(errorMessage)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
-
-const saveSettings = async () => {
-  isSaving.value = true;
-  error.value = null;
-  successMessage.value = '';
-  try {
-    await instance.put('/api/v1/settings/', { settings: form.value });
-    successMessage.value = '設定已成功儲存！';
-    setTimeout(() => successMessage.value = '', 3000);
-  } catch (err) {
-    error.value = '儲存設定失敗。';
-    console.error(err);
-  } finally {
-    isSaving.value = false;
-  }
-};
+}
 
 const testConnection = async () => {
-  if (!form.value.ollama_url) {
-    testConnectionStatus.value = { isError: true, message: '請輸入 Ollama URL。' };
-    return;
-  }
-  isTestingConnection.value = true;
-  testConnectionStatus.value = null;
+  isTestingConnection.value = true
+  testConnectionStatus.value = null
   try {
-    const response = await instance.post('/api/v1/ollama/test-connection', { url: form.value.ollama_url });
-    testConnectionStatus.value = { isError: false, message: `連線成功！Ollama 版本: ${response.data.version}` };
+    await instance.post('/api/v1/ollama/test', { url: form.value.ollama_url })
+    testConnectionStatus.value = { isError: false, message: '連線成功！' }
+    toast.success('連線成功！')
   } catch (err) {
-    const detail = err.response?.data?.detail || '未知錯誤';
-    testConnectionStatus.value = { isError: true, message: `連線失敗: ${detail}` };
-    console.error(err);
+    const errorMessage = err.response?.data?.detail || '連線失敗，請檢查 URL 或 Ollama 服務狀態。'
+    testConnectionStatus.value = { isError: true, message: errorMessage }
+    toast.error(errorMessage)
   } finally {
-    isTestingConnection.value = false;
+    isTestingConnection.value = false
   }
-};
+}
 
 const fetchOllamaModels = async () => {
-  ollamaModels.value = [];
-  try {
-    const response = await instance.get('/api/v1/ollama/models');
-    ollamaModels.value = response.data;
-    if (response.data.length === 0) {
-      // Maybe show a small warning if no models are found
-    }
-  } catch (err) {
-    console.error('無法獲取 Ollama 模型列表:', err);
-    // Do not show a big error, just log it. The dropdown will be empty.
+  if (!form.value.ollama_url) {
+    toast.info('請先輸入 Ollama URL。')
+    return
   }
-};
+  try {
+    const response = await instance.get('/api/v1/ollama/models', { params: { url: form.value.ollama_url } })
+    ollamaModels.value = response.data
+    if (ollamaModels.value.length === 0) {
+      toast.info('Ollama 服務中目前沒有可用的模型。')
+    }
+  } catch (error) {
+    toast.error('無法獲取模型列表。')
+    ollamaModels.value = []
+  }
+}
 
 const pullModel = async () => {
-  if (!modelToPull.value) return;
-  isPullingModel.value = true;
-  pullStatus.value = `正在開始下載 ${modelToPull.value}...`;
-  
-  // We must use the native fetch API for streaming responses in the browser,
-  // as axios does not support it well.
-  const token = localStorage.getItem('token');
-  if (!token) {
-    pullStatus.value = "錯誤：未授權。請重新登入。";
-    isPullingModel.value = false;
-    return;
+  if (!modelToPull.value) {
+    toast.warning('請輸入要下載的模型名稱。')
+    return
   }
+  isPullingModel.value = true
+  pullStatus.value = `正在準備下載 ${modelToPull.value}...\n`
 
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/ollama/pull`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ model_name: modelToPull.value }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `伺服器錯誤 ${response.status}`);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
-    let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        pullStatus.value += '\n\n下載完成！';
-        break;
+    const response = await instance.post('/api/v1/ollama/pull', 
+      { model_name: modelToPull.value },
+      { 
+        responseType: 'text',
+        timeout: 0 // No timeout for long-running operations
       }
+    );
+
+    // Parse the streaming response and show only important progress
+    if (response.data) {
+      const lines = response.data.split('\n').filter(line => line.trim())
+      let hasShownDownloading = false
       
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      
-      for (let i = 0; i < lines.length - 1; i++) {
-        const line = lines[i];
-        if (line.trim() === '') continue;
+      lines.forEach(line => {
         try {
-          const progress = JSON.parse(line);
-          let status_text = progress.status;
-          if (progress.digest) {
-              status_text += ` (layer: ${progress.digest.substring(7, 19)})`;
+          const progressData = JSON.parse(line)
+          if (progressData.status) {
+            const status = progressData.status
+            
+            // Show important milestones
+            if (status.includes('pulling manifest')) {
+              pullStatus.value += `正在下載模型清單...\n`
+            }
+            else if (status.includes('verifying sha256 digest')) {
+              pullStatus.value += `正在驗證模型完整性...\n`
+            }
+            else if (status.includes('writing manifest')) {
+              pullStatus.value += `正在寫入模型檔案...\n`
+            }
+            else if (status.includes('success')) {
+              pullStatus.value += `模型下載成功！\n`
+            }
+            else if (status.includes('error') || status.includes('failed')) {
+              pullStatus.value += `錯誤: ${status}\n`
+            }
+            // For layer pulling, show only one message for all layers
+            else if (status.includes('pulling') && status.match(/pulling ([a-f0-9]+)/)) {
+              if (!hasShownDownloading) {
+                pullStatus.value += `正在下載模型檔案...\n`
+                hasShownDownloading = true
+              }
+            }
           }
-          if (progress.total && progress.completed) {
-              const percent = Math.round((progress.completed / progress.total) * 100);
-              status_text += ` - ${percent}%`;
-          }
-          pullStatus.value = status_text;
-        } catch (e) {
-            console.warn("Could not parse stream line as JSON: ", line);
-            pullStatus.value = line;
+        } catch(e) {
+          // Ignore JSON parsing errors for incomplete lines
         }
-      }
-      buffer = lines[lines.length - 1];
+      });
     }
-    
-    await fetchOllamaModels(); // Refresh the list after pulling
-    modelToPull.value = ''; // Clear input
 
+    pullStatus.value += '\n下載完成！'
+    toast.success(`${modelToPull.value} 模型下載完成！`)
+    await fetchOllamaModels()
   } catch (err) {
-    pullStatus.value = `下載失敗: ${err.message}`;
-    console.error(err);
+    const errorMessage = err.response?.data?.detail || `下載模型失敗: ${err.message}`
+    pullStatus.value += `\n錯誤: ${errorMessage}`
+    toast.error(errorMessage)
   } finally {
-    isPullingModel.value = false;
-    setTimeout(() => {
-        if (pullStatus.value.includes('下載完成')) {
-            pullStatus.value = '';
-        }
-    }, 5000);
+    isPullingModel.value = false
+    modelToPull.value = ''
   }
-};
+}
 
-onMounted(fetchSettings);
+const saveSettings = async () => {
+  isSaving.value = true
+  successMessage.value = ''
+  error.value = null
+  try {
+    await instance.put('/api/v1/settings/', { settings: form.value })
+    toast.success('設定已成功儲存！')
+    successMessage.value = '設定已成功儲存！'
+    setTimeout(() => successMessage.value = '', 3000)
+  } catch (err) {
+    const errorMessage = err.response?.data?.detail || '儲存設定失敗。'
+    toast.error(errorMessage)
+    error.value = errorMessage
+  } finally {
+    isSaving.value = false
+  }
+}
+
+const testAuth = async () => {
+  try {
+    toast.info('開始測試認證機制...')
+    
+    // 測試 1: 手動刷新 token
+    toast.info('測試 1: 手動刷新 token')
+    await refreshToken()
+    toast.success('Token 刷新成功！')
+    
+    // 測試 2: 發送需要認證的請求
+    toast.info('測試 2: 發送需要認證的請求')
+    const response = await instance.get('/api/v1/auth/me')
+    toast.success(`當前用戶: ${response.data.username} (${response.data.role})`)
+    
+    // 測試 3: 連續發送多個請求
+    toast.info('測試 3: 連續發送多個請求')
+    const promises = [
+      instance.get('/api/v1/settings/'),
+      instance.get('/api/v1/users/'),
+      instance.get('/api/v1/stats/')
+    ]
+    await Promise.all(promises)
+    toast.success('所有請求都成功完成！')
+    
+    toast.success('認證機制測試完成！')
+  } catch (error) {
+    console.error('認證測試失敗:', error)
+    toast.error(`認證測試失敗: ${error.message}`)
+  }
+}
+
+onMounted(fetchSettings)
 </script> 

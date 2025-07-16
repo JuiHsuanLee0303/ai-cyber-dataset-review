@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import useAuth from '../store/auth'
+import { useToast } from 'vue-toastification'
 
 import Layout from '../components/Layout.vue'
 import Login from '../views/Login.vue'
@@ -9,6 +10,7 @@ import AdminUsers from '../views/AdminUsers.vue'
 import AdminSettings from '../views/AdminSettings.vue'
 import AdminData from '../views/AdminData.vue'
 import AdminRawData from '../views/AdminRawData.vue'
+import AdminLegalArticles from '../views/AdminLegalArticles.vue'
 
 
 const routes = [
@@ -55,6 +57,12 @@ const routes = [
         name: 'AdminRawData',
         component: AdminRawData,
         meta: { roles: ['admin'] },
+      },
+      {
+        path: 'admin/legal-articles',
+        name: 'AdminLegalArticles',
+        component: AdminLegalArticles,
+        meta: { roles: ['admin'] },
       }
     ]
   },
@@ -72,6 +80,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const { state } = useAuth()
+  const toast = useToast()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiredRoles = to.matched.flatMap(record => record.meta.roles || [])
 
@@ -80,7 +89,7 @@ router.beforeEach((to, from, next) => {
     next('/login')
   } else if (requiresAuth && requiredRoles.length > 0 && !requiredRoles.includes(state.user.role)) {
     // User does not have the required role
-    alert('您沒有權限訪問此頁面。')
+    toast.error('您沒有權限訪問此頁面。')
     next('/') // Redirect to dashboard
   } else {
     // Proceed as normal

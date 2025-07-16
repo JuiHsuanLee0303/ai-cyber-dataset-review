@@ -68,8 +68,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import useAuth from '../store/auth'
+import { useToast } from 'vue-toastification'
 
 const { instance } = useAuth()
+const toast = useToast()
 const finalDataset = ref([])
 const loading = ref(true)
 const error = ref(null)
@@ -83,7 +85,7 @@ const fetchFinalDataset = async () => {
   } catch (err) {
     console.error('Failed to load final dataset:', err)
     error.value = '無法載入最終資料集。'
-    alert(error.value)
+    toast.error(error.value)
   } finally {
     loading.value = false
   }
@@ -91,7 +93,7 @@ const fetchFinalDataset = async () => {
 
 const exportCSV = () => {
   if (finalDataset.value.length === 0) {
-    alert('沒有資料可匯出。');
+    toast.info('沒有資料可匯出。');
     return;
   }
 

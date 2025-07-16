@@ -81,3 +81,10 @@ class SystemSetting(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True, nullable=False)
     value = Column(JSON, nullable=False)
+
+class LegalArticle(Base):
+    __tablename__ = "legal_articles"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True, nullable=False)
+    number = Column(String, nullable=False)
+    content = Column(Text, nullable=False)

@@ -18,10 +18,14 @@ class User(UserBase):
 # --- Token Schemas ---
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 # --- RawDataset Schemas ---
 class RawDatasetBase(BaseModel):
@@ -118,3 +122,17 @@ class DashboardStats(BaseModel):
     review_activity: List[ReviewActivity]
     top_reviewers: List[TopReviewer]
     common_rejection_reasons: List[CommonRejectionReason]
+
+# --- Legal Article Schemas ---
+
+class LegalArticleBase(BaseModel):
+    title: str
+    number: str
+    content: str
+
+class LegalArticleCreate(LegalArticleBase):
+    pass
+
+class LegalArticle(LegalArticleBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)

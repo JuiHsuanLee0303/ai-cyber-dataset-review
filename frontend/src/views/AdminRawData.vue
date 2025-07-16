@@ -115,8 +115,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import useAuth from '../store/auth'
+import { useToast } from 'vue-toastification'
+import useConfirm from '../composables/useConfirm'
 
 const { instance } = useAuth()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const datasets = ref([])
 const loading = ref(true)
@@ -201,13 +205,18 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = async (id) => {
-  if (!confirm('確定要刪除這筆資料嗎？此操作無法復原。')) return
+  const confirmed = await confirm('刪除確認', '確定要刪除這筆資料嗎？此操作無法復原。')
+  if (!confirmed) return
+  
   error.value = null
   try {
     await instance.delete(`/api/v1/datasets/${id}`)
     await fetchDatasets()
+    toast.success('資料已成功刪除。')
   } catch (err) {
-    error.value = `刪除失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    const errorMsg = `刪除失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
   }
 }
 
@@ -220,7 +229,9 @@ const showRejections = async (item) => {
     const response = await instance.get(`/api/v1/datasets/${item.id}/rejections`)
     rejectionReasons.value = response.data
   } catch (err) {
-    error.value = `無法獲取拒絕原因: ${err.response?.data?.detail || '未知錯誤'}`
+    const errorMsg = `無法獲取拒絕原因: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
   } finally {
     rejectionLoading.value = false
   }
