@@ -109,7 +109,7 @@ const editingForm = ref({ id: null, title: '', number: '', content: '' })
 const fetchArticles = async () => {
   loading.value = true
   try {
-    const response = await instance.get('/api/v1/legal-articles')
+    const response = await instance.get('/api/v1/legal-articles/')
     articles.value = response.data
   } catch (error) {
     console.error('Failed to load articles:', error)
@@ -138,7 +138,7 @@ const handleImport = async () => {
 
   importing.value = true
   try {
-    await instance.post('/api/v1/legal-articles', payload)
+    await instance.post('/api/v1/legal-articles/', payload)
     jsonInput.value = '' // Clear input on success
     await fetchArticles() // Refresh the list
     toast.success('匯入成功！')
