@@ -85,6 +85,13 @@
           >
             <span class="mx-4">系統設定</span>
           </router-link>
+          <router-link 
+            to="/admin/model-stats" 
+            @click="closeMobileMenu"
+            class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
+          >
+            <span class="mx-4">模型統計管理</span>
+          </router-link>
         </div>
       </nav>
     </aside>
@@ -157,7 +164,8 @@ const getPageTitle = () => {
     '/admin/settings': '系統設定',
     '/admin/raw-data': '待審核資料管理',
     '/admin/data': '最終資料集管理',
-    '/admin/legal-articles': '法規管理'
+    '/admin/legal-articles': '法規管理',
+    '/admin/model-stats': '模型統計管理'
   }
   return routeTitles[route.path] || 'AI Review'
 }

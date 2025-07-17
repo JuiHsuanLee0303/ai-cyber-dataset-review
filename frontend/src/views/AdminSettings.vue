@@ -88,24 +88,31 @@
 
           <!-- Ollama Model Selection -->
           <div class="mb-6">
-            <label for="ollama-model" class="block text-gray-700 font-semibold mb-3 text-sm md:text-base">
-              Ollama 模型
+            <label class="block text-gray-700 font-semibold mb-3 text-sm md:text-base">
+              Ollama 模型選擇
             </label>
             <p class="text-gray-500 text-sm mb-3">
-              從 Ollama 服務選擇一個模型用於自動再生。
+              勾選要使用的模型，有勾選的模型皆可以讓使用者用來重新生成資料。
             </p>
             <div class="flex flex-col lg:flex-row items-stretch lg:items-center space-y-3 lg:space-y-0 lg:space-x-4">
               <div class="flex-1">
-                <select
-                  id="ollama-model"
-                  v-model="form.ollama_model"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-gray-50 focus:bg-white"
-                >
-                  <option v-if="ollamaModels.length === 0" value="" disabled>請先確認 URL 並刷新</option>
-                  <option v-for="model in ollamaModels" :key="model.name" :value="model.name">
-                    {{ model.name }}
-                  </option>
-                </select>
+                <div v-if="ollamaModels.length === 0" class="text-center py-8 bg-gray-50 border border-gray-200 rounded-xl">
+                  <p class="text-gray-500">請先確認 URL 並刷新模型列表</p>
+                </div>
+                <div v-else class="max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-xl p-4">
+                  <div v-for="model in ollamaModels" :key="model.name" class="flex items-center mb-3 last:mb-0">
+                    <input
+                      type="checkbox"
+                      :id="'model-' + model.name"
+                      :value="model.name"
+                      v-model="form.ollama_models"
+                      class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <label :for="'model-' + model.name" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                      {{ model.name }}
+                    </label>
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
@@ -114,6 +121,11 @@
               >
                 刷新列表
               </button>
+            </div>
+            <div v-if="form.ollama_models && form.ollama_models.length > 0" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p class="text-sm text-blue-700">
+                已選擇 {{ form.ollama_models.length }} 個模型：{{ form.ollama_models.join(', ') }}
+              </p>
             </div>
           </div>
 
@@ -270,7 +282,7 @@ const successMessage = ref('')
 const form = ref({
   rejection_threshold: 3,
   approval_threshold: 2,
-  ollama_model: '',
+  ollama_models: [],  // 修改：支援多模型列表
   ollama_url: 'http://host.docker.internal:11434'
 })
 

@@ -34,6 +34,7 @@
 - [08-regeneration-review-fix.md](features/08-regeneration-review-fix.md) - 重新生成審核修復
 - [09-display-mode-and-batch-delete.md](features/09-display-mode-and-batch-delete.md) - 顯示模式和批量刪除
 - [10-rejection-reason-optimization.md](features/10-rejection-reason-optimization.md) - 拒絕理由優化
+- [11-multi-model-support.md](features/11-multi-model-support.md) - 多模型支援功能
 
 ### 🧪 測試文檔 (testing/)
 測試相關指南和說明

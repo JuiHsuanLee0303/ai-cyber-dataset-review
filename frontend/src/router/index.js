@@ -11,6 +11,7 @@ import AdminSettings from '../views/AdminSettings.vue'
 import AdminData from '../views/AdminData.vue'
 import AdminRawData from '../views/AdminRawData.vue'
 import AdminLegalArticles from '../views/AdminLegalArticles.vue'
+import AdminModelStats from '../views/AdminModelStats.vue'
 
 
 const routes = [
@@ -62,6 +63,12 @@ const routes = [
         path: 'admin/legal-articles',
         name: 'AdminLegalArticles',
         component: AdminLegalArticles,
+        meta: { roles: ['admin'] },
+      },
+      {
+        path: 'admin/model-stats',
+        name: 'AdminModelStats',
+        component: AdminModelStats,
         meta: { roles: ['admin'] },
       }
     ]

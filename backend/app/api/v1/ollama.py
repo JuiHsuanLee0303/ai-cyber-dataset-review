@@ -8,7 +8,7 @@ import os
 from app import crud, schemas
 from app.database import models
 from app.database.base import get_db
-from app.api.v1.users import get_current_admin_user
+from app.api.v1.auth import get_current_admin_user
 
 router = APIRouter()
 

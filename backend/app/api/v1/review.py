@@ -117,21 +117,37 @@ def submit_review(
         review=review
     )
 
-    # We need to refresh the dataset object to get the updated counts
-    db.refresh(dataset)
+    # Get review statistics from ReviewLog table
+    review_stats = crud.get_dataset_review_stats(db, dataset_id)
     
     # Check approval threshold and move to final dataset if met
     if review.result.upper() == "ACCEPT":
         approval_threshold_setting = crud.get_setting(db, "approval_threshold")
         approval_threshold = _extract_value(approval_threshold_setting.value) if approval_threshold_setting else 2
         
-        if dataset.accept_count >= approval_threshold:
+        if review_stats["accept_count"] >= approval_threshold:
             print(f"Dataset {dataset.id} has reached the approval threshold. Moving to final dataset.")
             # Move to final dataset
+            # Create a comprehensive input that includes instruction and input
+            comprehensive_input = ""
+            if dataset.instruction:
+                comprehensive_input += f"指令: {dataset.instruction}\n"
+            if dataset.input:
+                comprehensive_input += f"輸入: {dataset.input}\n"
+            if dataset.system:
+                comprehensive_input += f"系統提示: {dataset.system}\n"
+            if dataset.source:
+                comprehensive_input += f"來源: {', '.join(dataset.source)}"
+            
+            # If no structured input, use the original input
+            if not comprehensive_input.strip():
+                comprehensive_input = dataset.input or dataset.instruction or ""
+            
             final_dataset = models.FinalDataset(
-                original_input=dataset.input or "",
+                original_input=comprehensive_input,
                 final_output=dataset.output,
-                raw_dataset_id=dataset.id
+                raw_dataset_id=dataset.id,
+                model_name=dataset.model_name  # 新增：保存模型名稱
             )
             db.add(final_dataset)
             dataset.review_status = "accepted"
@@ -144,8 +160,8 @@ def submit_review(
         # Use a default if not set, although init_db should handle it
         rejection_threshold = _extract_value(rejection_threshold_setting.value) if rejection_threshold_setting else 3
 
-        if dataset.reject_count >= rejection_threshold:
+        if review_stats["reject_count"] >= rejection_threshold:
             print(f"Dataset {dataset.id} has reached the rejection threshold. Adding regeneration task to background.")
-            background_tasks.add_task(regenerate_dataset, db, dataset.id)
+            background_tasks.add_task(regenerate_dataset, db, dataset.id, None)  # 自動重新生成時隨機選擇模型
             
     return review_log 

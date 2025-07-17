@@ -2,9 +2,14 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800">最終資料集管理</h1>
-      <button @click="exportCSV" class="px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700" :disabled="loading || finalDataset.length === 0">
-        {{ loading ? '載入中...' : '匯出為 CSV' }}
-      </button>
+      <div class="flex space-x-3">
+        <button @click="exportCSV" class="px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors" :disabled="loading || finalDataset.length === 0">
+          {{ loading ? '載入中...' : '匯出為 CSV' }}
+        </button>
+        <button @click="showClearConfirm = true" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors" :disabled="loading || finalDataset.length === 0">
+          清空所有資料
+        </button>
+      </div>
     </div>
 
     <!-- Final Dataset Cards -->
@@ -30,72 +35,123 @@
                 已通過
               </span>
             </div>
-            <div class="text-xs text-gray-400">
-              {{ new Date().toLocaleDateString() }}
+            <div class="flex items-center space-x-2">
+              <div class="text-xs text-gray-400">
+                {{ new Date().toLocaleDateString() }}
+              </div>
+              <button 
+                @click="deleteItem(item.id)" 
+                class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                title="刪除此筆資料"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
         
         <!-- Content -->
         <div class="p-4 space-y-4">
-          <!-- Instruction -->
+          <!-- Original Input -->
           <div>
             <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
               <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              指令 (Instruction)
+              原始輸入 (Original Input)
             </h4>
             <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-3">{{ item.instruction || '無' }}</p>
+              <p class="text-sm text-gray-800 line-clamp-3">{{ item.original_input || '無' }}</p>
             </div>
           </div>
           
-          <!-- Output -->
+          <!-- Final Output -->
           <div>
             <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
               <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-              最終輸出 (Output)
+              最終輸出 (Final Output)
             </h4>
             <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-4">{{ item.output || '無' }}</p>
+              <p class="text-sm text-gray-800 line-clamp-4">{{ item.final_output || '無' }}</p>
             </div>
           </div>
           
-          <!-- System Prompt (if exists) -->
-          <div v-if="item.system">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-              系統提示 (System)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-2">{{ item.system }}</p>
-            </div>
-          </div>
+
           
-          <!-- Input (if exists) -->
-          <div v-if="item.input">
+          <!-- Model Name (if exists) -->
+          <div v-if="item.model_name">
             <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-              輸入 (Input)
+              <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+              生成模型 (Model)
             </h4>
             <div class="bg-gray-50 rounded-md p-3">
-              <p class="text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
+              <span class="text-sm text-gray-800 font-medium">{{ item.model_name }}</span>
             </div>
           </div>
-          
-          <!-- Source (if exists) -->
-          <div v-if="item.source && item.source.length > 0">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-              來源 (Source)
-            </h4>
-            <div class="bg-gray-50 rounded-md p-3">
-              <div class="space-y-1">
-                <div v-for="(src, index) in item.source" :key="index" class="text-xs text-gray-600 bg-white px-2 py-1 rounded border">
-                  {{ src }}
-                </div>
-              </div>
-            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear All Confirmation Modal -->
+    <div v-if="showClearConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
           </div>
+          <h3 class="text-lg font-semibold text-gray-900">確認清空</h3>
+        </div>
+        <p class="text-gray-600 mb-6">
+          您確定要清空所有最終資料集嗎？此操作無法撤銷，所有資料將永久刪除。
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button 
+            @click="showClearConfirm = false" 
+            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            取消
+          </button>
+          <button 
+            @click="clearAllData" 
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            :disabled="clearing"
+          >
+            {{ clearing ? '清空中...' : '確認清空' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Item Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">確認刪除</h3>
+        </div>
+        <p class="text-gray-600 mb-6">
+          您確定要刪除此筆最終資料集嗎？此操作無法撤銷。
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button 
+            @click="showDeleteConfirm = false" 
+            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            取消
+          </button>
+          <button 
+            @click="confirmDeleteItem" 
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            :disabled="deleting"
+          >
+            {{ deleting ? '刪除中...' : '確認刪除' }}
+          </button>
         </div>
       </div>
     </div>
@@ -112,6 +168,11 @@ const toast = useToast()
 const finalDataset = ref([])
 const loading = ref(true)
 const error = ref(null)
+const showClearConfirm = ref(false)
+const showDeleteConfirm = ref(false)
+const clearing = ref(false)
+const deleting = ref(false)
+const itemToDelete = ref(null)
 
 const fetchFinalDataset = async () => {
   loading.value = true
@@ -134,7 +195,7 @@ const exportCSV = () => {
     return;
   }
 
-  const headers = ['id', 'instruction', 'input', 'output', 'system', 'source', 'history'];
+  const headers = ['id', 'original_input', 'final_output', 'raw_dataset_id', 'model_name'];
   const csvRows = [];
   
   // Add header row
@@ -164,6 +225,44 @@ const exportCSV = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+}
+
+const deleteItem = (itemId) => {
+  itemToDelete.value = itemId
+  showDeleteConfirm.value = true
+}
+
+const confirmDeleteItem = async () => {
+  if (!itemToDelete.value) return
+  
+  deleting.value = true
+  try {
+    await instance.delete(`/api/v1/datasets/final/${itemToDelete.value}`)
+    toast.success('資料刪除成功')
+    await fetchFinalDataset() // 重新載入資料
+  } catch (err) {
+    console.error('Failed to delete item:', err)
+    toast.error('刪除失敗：' + (err.response?.data?.detail || '未知錯誤'))
+  } finally {
+    deleting.value = false
+    showDeleteConfirm.value = false
+    itemToDelete.value = null
+  }
+}
+
+const clearAllData = async () => {
+  clearing.value = true
+  try {
+    const response = await instance.delete('/api/v1/datasets/final')
+    toast.success(`成功清空 ${response.data.deleted_count} 筆資料`)
+    await fetchFinalDataset() // 重新載入資料
+  } catch (err) {
+    console.error('Failed to clear all data:', err)
+    toast.error('清空失敗：' + (err.response?.data?.detail || '未知錯誤'))
+  } finally {
+    clearing.value = false
+    showClearConfirm.value = false
   }
 }
 

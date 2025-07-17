@@ -7,7 +7,7 @@ from app import crud, schemas
 from app.database import models
 from app.database.base import get_db
 from app.api.v1.auth import get_current_user
-from app.api.v1.users import get_current_admin_user
+from app.api.v1.auth import get_current_admin_user
 from app.services.regeneration import regenerate_dataset
 from app.services.ollama_client import OllamaClient
 
@@ -33,11 +33,19 @@ async def generate_dataset_from_regulations(
     """
     try:
         # Get Ollama configuration
-        model_setting = crud.get_setting(db, "ollama_model")
         url_setting = crud.get_setting(db, "ollama_url")
-
-        model_name = model_setting.value if model_setting else "llama3"
         ollama_url = url_setting.value if url_setting else "http://ollama:11434"
+
+        # 使用指定的模型或從設定中獲取第一個可用模型
+        if request.model_name:
+            model_name = request.model_name
+        else:
+            # 從多模型設定中獲取第一個模型
+            models_setting = crud.get_setting(db, "ollama_models")
+            if models_setting and models_setting.value and len(models_setting.value) > 0:
+                model_name = models_setting.value[0]  # 使用第一個模型作為預設
+            else:
+                model_name = "llama3"  # 預設模型
 
         # Create Ollama client
         ollama_client = OllamaClient(host=ollama_url, model=model_name)
@@ -57,8 +65,9 @@ async def generate_dataset_from_regulations(
         # Generate structured dataset with new prompt
         generated_data = await ollama_client.generate_from_regulations(article_contents)
         
-        # Add source to the generated data
+        # Add source and model name to the generated data
         generated_data["source"] = selected_articles
+        generated_data["model_name"] = model_name
         
         return schemas.GeneratedDataset(**generated_data)
         
@@ -119,6 +128,49 @@ def update_raw_dataset(
         raise HTTPException(status_code=404, detail="Dataset not found")
     return db_dataset
 
+# Final dataset routes (must come before generic /{dataset_id} routes)
+@router.get("/final", response_model=List[schemas.FinalDataset])
+def read_final_datasets(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Retrieve all datasets that have been moved to the final dataset.
+    This is for the final dataset management page.
+    """
+    datasets = crud.get_final_datasets(db, skip=skip, limit=limit)
+    return datasets
+
+@router.delete("/final", response_model=dict)
+def delete_all_final_datasets(
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Delete all final datasets.
+    Only accessible by admin users.
+    """
+    count = crud.delete_all_final_datasets(db)
+    return {"message": f"Successfully deleted {count} final datasets", "deleted_count": count}
+
+@router.delete("/final/{dataset_id}", response_model=schemas.FinalDataset)
+def delete_final_dataset(
+    dataset_id: int,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Delete a specific final dataset.
+    Only accessible by admin users.
+    """
+    db_dataset = crud.delete_final_dataset(db, dataset_id=dataset_id)
+    if db_dataset is None:
+        raise HTTPException(status_code=404, detail="Final dataset not found")
+    return db_dataset
+
+# Generic dataset routes (must come after specific routes)
 @router.delete("/{dataset_id}", response_model=schemas.RawDataset)
 def delete_raw_dataset(
     dataset_id: int,
@@ -130,24 +182,13 @@ def delete_raw_dataset(
         raise HTTPException(status_code=404, detail="Dataset not found")
     return db_dataset
 
-@router.get("/final", response_model=List[schemas.RawDataset])
-def read_final_datasets(
-    db: Session = Depends(get_db),
-    admin_user: models.User = Depends(get_current_admin_user)
-):
-    """
-    Retrieve all datasets that have been marked as 'accepted'.
-    This is for the final dataset management page.
-    """
-    datasets = crud.get_final_datasets(db)
-    return datasets
-
 @router.post("/{dataset_id}/regenerate", status_code=status.HTTP_202_ACCEPTED)
 def manual_regenerate_dataset(
     dataset_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    admin_user: models.User = Depends(get_current_admin_user)
+    admin_user: models.User = Depends(get_current_admin_user),
+    model_name: str = None  # 新增：可選的模型參數
 ):
     """
     Manually trigger regeneration for a dataset.
@@ -165,8 +206,8 @@ def manual_regenerate_dataset(
             detail="Dataset is already being regenerated"
         )
     
-    # Add regeneration task to background
-    background_tasks.add_task(regenerate_dataset, db, dataset_id)
+    # Add regeneration task to background with model parameter
+    background_tasks.add_task(regenerate_dataset, db, dataset_id, model_name)
     
     return {
         "message": f"Regeneration started for dataset {dataset_id}",

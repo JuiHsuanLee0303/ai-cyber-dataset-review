@@ -50,6 +50,7 @@ class RawDataset(Base):
     system = Column(Text, nullable=True)
     history = Column(JSON, default=[]) # Unchanged
     source = Column(JSON, default=[])
+    model_name = Column(String, nullable=True)  # 新增：生成使用的模型名稱
 
     # Review-related fields (unchanged)
     review_status = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING, nullable=False)
@@ -65,6 +66,7 @@ class FinalDataset(Base):
     original_input = Column(Text, nullable=False)
     final_output = Column(Text, nullable=False)
     raw_dataset_id = Column(Integer, ForeignKey("raw_dataset.id"))
+    model_name = Column(String, nullable=True)  # 新增：生成使用的模型名稱
 
 
 class ReviewLog(Base):
@@ -76,6 +78,7 @@ class ReviewLog(Base):
     comment = Column(String)
     common_reasons = Column(JSON, default=[])  # 新增：常見拒絕理由列表
     detailed_reason = Column(Text)  # 新增：詳細拒絕理由
+    model_name = Column(String, nullable=True)  # 新增：模型名稱，用於統計
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     reviewer = relationship("User", back_populates="review_logs")

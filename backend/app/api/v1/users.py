@@ -6,17 +6,9 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.database import models
 from app.database.base import get_db
-from app.api.v1.auth import get_current_user
+from app.api.v1.auth import get_current_user, get_current_admin_user
 
 router = APIRouter()
-
-def get_current_admin_user(current_user: models.User = Depends(get_current_user)):
-    if current_user.role != models.UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
-        )
-    return current_user
 
 @router.post("/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(

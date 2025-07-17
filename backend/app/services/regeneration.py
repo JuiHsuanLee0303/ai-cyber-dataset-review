@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.services.ollama_client import OllamaClient
 
-async def regenerate_dataset(db: Session, dataset_id: int):
+import random
+
+async def regenerate_dataset(db: Session, dataset_id: int, model_name: str = None):
     """
     The core logic for regenerating a dataset item using optimized prompt engineering.
     """
@@ -24,14 +26,25 @@ async def regenerate_dataset(db: Session, dataset_id: int):
     print(f"Found {len(reasons)} rejection reasons for dataset {dataset_id}")
     
     # 2. Get Ollama configuration
-    model_setting = crud.get_setting(db, "ollama_model")
     url_setting = crud.get_setting(db, "ollama_url")
-
-    model_name = model_setting.value if model_setting else "llama3"
     ollama_url = url_setting.value if url_setting else "http://ollama:11434"
 
-    # 3. Create Ollama client and generate structured content
-    ollama_client = OllamaClient(host=ollama_url, model=model_name)
+    # 3. 決定使用的模型
+    if model_name:
+        # 使用指定的模型
+        selected_model = model_name
+    else:
+        # 從設定中隨機選擇一個模型
+        models_setting = crud.get_setting(db, "ollama_models")
+        if models_setting and models_setting.value and len(models_setting.value) > 0:
+            selected_model = random.choice(models_setting.value)
+        else:
+            selected_model = "llama3"  # 預設模型
+    
+    print(f"Using model: {selected_model} for regeneration")
+
+    # 4. Create Ollama client and generate structured content
+    ollama_client = OllamaClient(host=ollama_url, model=selected_model)
     
     try:
         # Use the new structured generation method
@@ -55,12 +68,16 @@ async def regenerate_dataset(db: Session, dataset_id: int):
         # 4. Update the dataset in the database
         # Add the old output to history
         history = list(dataset.history) if dataset.history else []
+        
+        # Get current review stats before clearing logs
+        current_stats = crud.get_dataset_review_stats(db, dataset_id)
+        
         history.append({
             "instruction": dataset.instruction,
             "input": dataset.input,
             "output": dataset.output,
-            "reject_count": dataset.reject_count,
-            "accept_count": dataset.accept_count,
+            "reject_count": current_stats["reject_count"],
+            "accept_count": current_stats["accept_count"],
             "rejection_reasons": reasons
         })
 
@@ -68,9 +85,8 @@ async def regenerate_dataset(db: Session, dataset_id: int):
         dataset.instruction = structured_result["instruction"]
         dataset.input = structured_result["input"]
         dataset.output = structured_result["output"]
+        dataset.model_name = selected_model  # 新增：保存使用的模型名稱
         dataset.review_status = "pending"
-        dataset.accept_count = 0
-        dataset.reject_count = 0
         dataset.history = history
         
         # Clear all review logs for this dataset to allow re-review

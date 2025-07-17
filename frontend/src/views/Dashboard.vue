@@ -61,6 +61,23 @@
               <li v-if="!stats.top_reviewers.length" class="text-gray-500 text-sm">尚無資料</li>
             </ul>
           </div>
+          
+          <!-- Model Statistics (only for admin) -->
+          <div v-if="isAdmin && stats.model_stats && stats.model_stats.length > 0" class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">模型統計</h3>
+            <ul class="space-y-3">
+              <li v-for="model in stats.model_stats" :key="model.model_name" class="flex justify-between items-center text-sm">
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-700">{{ model.model_name }}</span>
+                  <span class="text-xs text-gray-500">{{ model.total_datasets }} 筆資料</span>
+                </div>
+                <div class="flex flex-col items-end">
+                  <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full font-semibold text-xs">{{ model.acceptance_rate }}%</span>
+                  <span class="text-xs text-gray-500">{{ model.total_reviews }} 次審核</span>
+                </div>
+              </li>
+            </ul>
+          </div>
 
           <!-- Common Rejection Reasons -->
           <div v-if="stats.common_rejection_reasons" class="bg-white p-6 rounded-lg shadow-md">

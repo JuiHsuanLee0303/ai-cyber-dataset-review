@@ -800,6 +800,36 @@
               <h4 class="text-lg font-semibold text-gray-900">選擇法規條文</h4>
             </div>
             
+            <!-- Model Selection -->
+            <div class="mb-6">
+              <h5 class="font-medium text-gray-700 mb-3">選擇生成模型</h5>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div 
+                  v-for="model in availableModels" 
+                  :key="model"
+                  @click="toggleModelSelection(model)"
+                  :class="[
+                    'p-3 rounded-lg border cursor-pointer transition-all duration-200 text-center',
+                    selectedModel === model
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="flex items-center justify-center space-x-2">
+                    <input 
+                      type="radio" 
+                      :value="model"
+                      v-model="selectedModel"
+                      class="rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                      @click.stop
+                    />
+                    <span class="text-sm font-medium text-gray-700">{{ model }}</span>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">選擇要使用的 AI 模型來生成資料</p>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <!-- Available Regulations -->
               <div class="space-y-4">
@@ -883,7 +913,7 @@
              <div class="flex justify-center pt-6 border-t border-gray-200">
                <button 
                  @click="generateData" 
-                 :disabled="selectedRegulations.length === 0 || generating"
+                 :disabled="selectedRegulations.length === 0 || !selectedModel || generating"
                  class="btn btn-primary px-8 py-3"
                >
                  <svg v-if="generating" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -1041,6 +1071,10 @@ const regulationsLoading = ref(false)
 const generating = ref(false)
 const generatedData = ref(null)
 const confirming = ref(false)
+
+// For Model Selection
+const availableModels = ref([])
+const selectedModel = ref('')
 
 const fetchDatasets = async () => {
   loading.value = true
@@ -1224,14 +1258,41 @@ const closeRejectionModal = () => {
 }
 
 const handleManualRegenerate = async (item) => {
+  // 獲取可用模型
+  let availableModels = []
+  try {
+    const response = await instance.get('/api/v1/settings/')
+    if (response.data && response.data.ollama_models) {
+      availableModels = response.data.ollama_models
+    }
+  } catch (err) {
+    console.error('獲取可用模型失敗:', err)
+  }
+
+  if (availableModels.length === 0) {
+    toast.error('沒有可用的模型，請先在系統設定中配置模型')
+    return
+  }
+
+  // 如果有多個模型，讓用戶選擇
+  let selectedModel = null
+  if (availableModels.length === 1) {
+    selectedModel = availableModels[0]
+  } else {
+    // 這裡可以實現一個簡單的模型選擇對話框
+    // 暫時使用第一個模型
+    selectedModel = availableModels[0]
+    toast.info(`使用模型: ${selectedModel}`)
+  }
+
   const confirmed = await confirm(
     '手動重新生成確認', 
-    `確定要手動重新生成 ID ${item.id} 的資料嗎？此操作將使用 AI 重新生成內容。`
+    `確定要手動重新生成 ID ${item.id} 的資料嗎？\n使用模型: ${selectedModel}\n此操作將使用 AI 重新生成內容。`
   )
   if (!confirmed) return
   
   try {
-    const response = await instance.post(`/api/v1/datasets/${item.id}/regenerate`, null, {
+    const response = await instance.post(`/api/v1/datasets/${item.id}/regenerate?model_name=${selectedModel}`, null, {
       timeout: 60000 // 60秒超時
     })
     toast.success('重新生成已開始，請稍候...')
@@ -1453,10 +1514,12 @@ const fetchRegulations = async () => {
   }
 }
 
-const openGenerateModal = () => {
+const openGenerateModal = async () => {
   generateStep.value = 1
   selectedRegulations.value = []
-  fetchRegulations()
+  selectedModel.value = ''
+  await fetchRegulations()
+  await fetchAvailableModels()
   showGenerateModal.value = true
 }
 
@@ -1487,9 +1550,34 @@ const getRegulationById = (id) => {
   return availableRegulations.value.find(r => r.id === id)
 }
 
+const fetchAvailableModels = async () => {
+  try {
+    const response = await instance.get('/api/v1/settings/')
+    if (response.data && response.data.ollama_models) {
+      availableModels.value = response.data.ollama_models
+      // 預設選擇第一個模型
+      if (availableModels.value.length > 0 && !selectedModel.value) {
+        selectedModel.value = availableModels.value[0]
+      }
+    }
+  } catch (err) {
+    console.error('獲取可用模型失敗:', err)
+    availableModels.value = []
+  }
+}
+
+const toggleModelSelection = (model) => {
+  selectedModel.value = model
+}
+
 const generateData = async () => {
   if (selectedRegulations.value.length === 0) {
     toast.error('請選擇至少一個法規條文')
+    return
+  }
+
+  if (!selectedModel.value) {
+    toast.error('請選擇要使用的模型')
     return
   }
 
@@ -1499,7 +1587,8 @@ const generateData = async () => {
   
   try {
     const payload = {
-      selected_article_ids: selectedRegulations.value
+      selected_article_ids: selectedRegulations.value,
+      model_name: selectedModel.value  // 新增：指定使用的模型
     }
     const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
       timeout: 60000 // 60秒超時
@@ -1526,7 +1615,8 @@ const regenerateData = async () => {
   
   try {
     const payload = {
-      selected_article_ids: selectedRegulations.value
+      selected_article_ids: selectedRegulations.value,
+      model_name: selectedModel.value  // 新增：指定使用的模型
     }
     const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
       timeout: 60000 // 60秒超時
@@ -1557,7 +1647,8 @@ const confirmGeneratedData = async () => {
       output: generatedData.value.output,
       system: generatedData.value.system,
       history: generatedData.value.history,
-      source: generatedData.value.source
+      source: generatedData.value.source,
+      model_name: generatedData.value.model_name  // 新增：保存模型名稱
     }
     const response = await instance.post('/api/v1/datasets/confirm-generated', payload)
     toast.success('資料已確認加入！')

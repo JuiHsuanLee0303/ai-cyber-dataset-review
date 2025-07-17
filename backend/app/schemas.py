@@ -39,6 +39,7 @@ class RawDatasetBase(BaseModel):
     system: Optional[str] = None
     source: Optional[List[str]] = []
     history: Optional[List[Any]] = []
+    model_name: Optional[str] = None  # 新增：生成使用的模型名稱
 
 class RawDatasetCreate(RawDatasetBase):
     pass
@@ -61,6 +62,21 @@ class RawDatasetWithStats(RawDataset):
     accept_count: int
     reject_count: int
     review_logs: List[ReviewLogInDB] = []
+
+
+# --- FinalDataset Schemas ---
+class FinalDatasetBase(BaseModel):
+    original_input: str
+    final_output: str
+    raw_dataset_id: int
+    model_name: Optional[str] = None
+
+class FinalDatasetCreate(FinalDatasetBase):
+    pass
+
+class FinalDataset(FinalDatasetBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Review Schemas ---
@@ -102,7 +118,7 @@ class SystemSettingsUpdate(BaseModel):
 class AllSettings(BaseModel):
     rejection_threshold: int
     approval_threshold: int
-    ollama_model: str
+    ollama_models: List[str]  # 修改：從單一模型改為多模型列表
     ollama_url: str
 
 # --- Ollama Schemas ---
@@ -132,11 +148,20 @@ class CommonRejectionReason(BaseModel):
     reason: str
     count: int
 
+class ModelStats(BaseModel):
+    model_name: str
+    total_datasets: int
+    total_reviews: int
+    total_accepts: int
+    total_rejects: int
+    acceptance_rate: float
+
 class DashboardStats(BaseModel):
     global_stats: GlobalStats
     review_activity: List[ReviewActivity]
     top_reviewers: List[TopReviewer]
     common_rejection_reasons: List[CommonRejectionReason]
+    model_stats: List[ModelStats]  # 新增：按模型分類的統計
 
 # --- Legal Article Schemas ---
 
@@ -156,6 +181,7 @@ class LegalArticle(LegalArticleBase):
 
 class GenerateFromRegulationsRequest(BaseModel):
     selected_article_ids: List[int]
+    model_name: Optional[str] = None  # 新增：指定使用的模型名稱
 
 class GeneratedDataset(BaseModel):
     instruction: str
@@ -164,3 +190,4 @@ class GeneratedDataset(BaseModel):
     system: Optional[str] = None
     history: List[Dict[str, str]] = []
     source: List[str] = []
+    model_name: Optional[str] = None  # 新增：生成使用的模型名稱

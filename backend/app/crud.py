@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, Date
 from typing import List
+from datetime import datetime, timedelta
 
 from app import schemas
 from app.database import models
@@ -61,14 +62,23 @@ def get_raw_dataset(db: Session, dataset_id: int):
     return db.query(models.RawDataset).filter(models.RawDataset.id == dataset_id).first()
 
 def get_raw_datasets(db: Session, skip: int = 0, limit: int = 100):
-    return (
+    datasets = (
         db.query(models.RawDataset)
         .options(joinedload(models.RawDataset.review_logs))
+        .filter(models.RawDataset.review_status.in_(['pending', 'reviewing', 'regenerating']))
         .order_by(models.RawDataset.id)
         .offset(skip)
         .limit(limit)
         .all()
     )
+    
+    # Add calculated review stats to each dataset
+    for dataset in datasets:
+        stats = get_dataset_review_stats(db, dataset.id)
+        dataset.accept_count = stats["accept_count"]
+        dataset.reject_count = stats["reject_count"]
+    
+    return datasets
 
 def update_raw_dataset(db: Session, dataset_id: int, dataset_update: schemas.RawDatasetUpdate):
     db_dataset = get_raw_dataset(db, dataset_id)
@@ -99,19 +109,43 @@ def create_raw_dataset(db: Session, dataset: schemas.RawDatasetCreate):
         output=dataset.output,
         system=dataset.system,
         source=dataset.source,
-        history=dataset.history
+        history=dataset.history,
+        model_name=dataset.model_name  # 新增：保存模型名稱
     )
     db.add(db_dataset)
     db.commit()
     db.refresh(db_dataset)
     return db_dataset
 
-def get_final_datasets(db: Session):
-    return db.query(models.RawDataset).filter(models.RawDataset.review_status == 'accepted').all()
+def get_final_datasets(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.FinalDataset).offset(skip).limit(limit).all()
+
+def get_final_dataset(db: Session, dataset_id: int):
+    return db.query(models.FinalDataset).filter(models.FinalDataset.id == dataset_id).first()
+
+def delete_final_dataset(db: Session, dataset_id: int):
+    db_dataset = get_final_dataset(db, dataset_id)
+    if not db_dataset:
+        return None
+    
+    db.delete(db_dataset)
+    db.commit()
+    return db_dataset
+
+def delete_all_final_datasets(db: Session):
+    """刪除所有最終資料集"""
+    count = db.query(models.FinalDataset).count()
+    db.query(models.FinalDataset).delete()
+    db.commit()
+    return count
 
 # --- ReviewLog CRUD ---
 
 def create_review_log(db: Session, dataset_id: int, reviewer_id: int, review: schemas.ReviewCreate):
+    # Get the dataset to extract model_name
+    dataset = get_raw_dataset(db, dataset_id)
+    model_name = dataset.model_name if dataset else None
+    
     # Create the review log entry
     db_review_log = models.ReviewLog(
         dataset_id=dataset_id,
@@ -119,20 +153,10 @@ def create_review_log(db: Session, dataset_id: int, reviewer_id: int, review: sc
         result=review.result.upper(),
         comment=review.comment,
         common_reasons=review.common_reasons or [],  # 新增
-        detailed_reason=review.detailed_reason  # 新增
+        detailed_reason=review.detailed_reason,  # 新增
+        model_name=model_name  # 新增：保存模型名稱
     )
     db.add(db_review_log)
-
-    # Update the counters on the dataset
-    dataset = get_raw_dataset(db, dataset_id)
-    if not dataset:
-        # This should ideally not happen if we check existence in the API layer
-        return None 
-
-    if review.result.upper() == "ACCEPT":
-        dataset.accept_count += 1
-    elif review.result.upper() == "REJECT":
-        dataset.reject_count += 1
     
     db.commit()
     db.refresh(db_review_log)
@@ -160,6 +184,26 @@ def get_rejection_reasons_for_dataset(db: Session, dataset_id: int):
         ))
     return results
 
+def get_dataset_review_stats(db: Session, dataset_id: int) -> dict:
+    """從 ReviewLog 表計算指定資料集的審核統計"""
+    # 計算接受次數
+    accept_count = db.query(func.count(models.ReviewLog.id)).filter(
+        models.ReviewLog.dataset_id == dataset_id,
+        models.ReviewLog.result == "ACCEPT"
+    ).scalar()
+    
+    # 計算拒絕次數
+    reject_count = db.query(func.count(models.ReviewLog.id)).filter(
+        models.ReviewLog.dataset_id == dataset_id,
+        models.ReviewLog.result == "REJECT"
+    ).scalar()
+    
+    return {
+        "accept_count": accept_count,
+        "reject_count": reject_count,
+        "total_reviews": accept_count + reject_count
+    }
+
 # --- System Settings CRUD ---
 
 def get_setting(db: Session, key: str):
@@ -186,12 +230,15 @@ def update_settings(db: Session, settings: dict):
 
 # --- Stats CRUD ---
 
-from sqlalchemy import func, Date
-from sqlalchemy.orm import aliased
-from datetime import datetime, timedelta
-
 def get_global_stats(db: Session) -> schemas.GlobalStats:
-    total_datasets = db.query(func.count(models.RawDataset.id)).scalar()
+    # 計算總資料集數：未被接受的 RawDataset + 所有 FinalDataset（避免重複計算）
+    raw_datasets_count = db.query(func.count(models.RawDataset.id)).filter(
+        models.RawDataset.review_status != models.ReviewStatus.ACCEPTED
+    ).scalar()
+    
+    final_datasets_count = db.query(func.count(models.FinalDataset.id)).scalar()
+    
+    total_datasets = raw_datasets_count + final_datasets_count
     
     total_reviews = db.query(func.count(models.ReviewLog.id)).scalar()
     
@@ -337,6 +384,121 @@ def get_user_rejection_reasons(db: Session, user_id: int, limit: int = 5) -> lis
     )
     return [schemas.CommonRejectionReason(reason=r.comment, count=r.count) for r in results]
 
+def get_model_stats(db: Session) -> list[schemas.ModelStats]:
+    """獲取按模型分類的統計數據"""
+    # 從所有相關表獲取模型名稱（RawDataset, FinalDataset, ReviewLog）
+    raw_models = (
+        db.query(models.RawDataset.model_name)
+        .filter(models.RawDataset.model_name.isnot(None))
+        .distinct()
+        .all()
+    )
+    
+    final_models = (
+        db.query(models.FinalDataset.model_name)
+        .filter(models.FinalDataset.model_name.isnot(None))
+        .distinct()
+        .all()
+    )
+    
+    # 從 ReviewLog 也獲取模型名稱（用於歷史數據）
+    review_models = (
+        db.query(models.ReviewLog.model_name)
+        .filter(models.ReviewLog.model_name.isnot(None))
+        .distinct()
+        .all()
+    )
+    
+    # 合併所有模型名稱
+    all_model_names = set()
+    for model in raw_models:
+        if model.model_name:
+            all_model_names.add(model.model_name)
+    for model in final_models:
+        if model.model_name:
+            all_model_names.add(model.model_name)
+    for model in review_models:
+        if model.model_name:
+            all_model_names.add(model.model_name)
+    
+    model_stats = []
+    for model_name in all_model_names:
+        # 獲取該模型的資料集總數
+        # 只計算未被接受的 RawDataset（避免與 FinalDataset 重複計算）
+        raw_datasets_count = db.query(func.count(models.RawDataset.id)).filter(
+            models.RawDataset.model_name == model_name,
+            models.RawDataset.review_status != models.ReviewStatus.ACCEPTED
+        ).scalar()
+        
+        final_datasets_count = db.query(func.count(models.FinalDataset.id)).filter(
+            models.FinalDataset.model_name == model_name
+        ).scalar()
+        
+        total_datasets = raw_datasets_count + final_datasets_count
+        
+        # 獲取該模型的審核總數（直接從 ReviewLog 表查詢，不需要 JOIN）
+        total_reviews = db.query(func.count(models.ReviewLog.id)).filter(
+            models.ReviewLog.model_name == model_name
+        ).scalar()
+        
+        # 獲取該模型的接受總數
+        total_accepts = db.query(func.count(models.ReviewLog.id)).filter(
+            models.ReviewLog.model_name == model_name,
+            models.ReviewLog.result == 'ACCEPT'
+        ).scalar()
+        
+        # 獲取該模型的拒絕總數
+        total_rejects = db.query(func.count(models.ReviewLog.id)).filter(
+            models.ReviewLog.model_name == model_name,
+            models.ReviewLog.result == 'REJECT'
+        ).scalar()
+        
+        # 計算通過率
+        acceptance_rate = (total_accepts / total_reviews * 100) if total_reviews > 0 else 0.0
+        
+        model_stats.append(schemas.ModelStats(
+            model_name=model_name,
+            total_datasets=total_datasets,
+            total_reviews=total_reviews,
+            total_accepts=total_accepts,
+            total_rejects=total_rejects,
+            acceptance_rate=round(acceptance_rate, 1)
+        ))
+    
+    return model_stats
+
+def refresh_model_stats(db: Session) -> dict:
+    """重新統計模型數據，清空所有 review_log 記錄"""
+    
+    # 1. 獲取清空前的統計資訊
+    total_review_logs_before = db.query(func.count(models.ReviewLog.id)).scalar()
+    
+    # 2. 清空所有 ReviewLog 記錄
+    db.query(models.ReviewLog).delete()
+    
+    # 3. 重置所有 RawDataset 的審核狀態和計數
+    raw_datasets = db.query(models.RawDataset).all()
+    for dataset in raw_datasets:
+        dataset.review_status = models.ReviewStatus.PENDING
+        dataset.accept_count = 0
+        dataset.reject_count = 0
+    
+    # 4. 提交清空操作
+    db.commit()
+    
+    # 5. 重新計算統計（此時所有統計都會是 0）
+    model_stats = get_model_stats(db)
+    
+    return {
+        "message": "所有審核記錄已清空，模型統計已重置",
+        "model_count": len(model_stats),
+        "models": [stat.model_name for stat in model_stats],
+        "cleanup_info": {
+            "total_review_logs_cleared": total_review_logs_before,
+            "raw_datasets_reset": len(raw_datasets)
+        }
+    }
+
 
 # --- Legal Articles CRUD ---
 
@@ -379,3 +541,4 @@ def delete_legal_article(db: Session, article_id: int):
     db.delete(db_article)
     db.commit()
     return db_article
+
