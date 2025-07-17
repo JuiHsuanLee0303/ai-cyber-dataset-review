@@ -574,10 +574,10 @@
         </div>
         
         <div class="modal-footer">
-          <button type="button" @click="showModal = false" class="btn btn-secondary">
+          <button type="button" @click="showModal = false" class="btn btn-secondary px-4 py-2">
             <span>取消</span>
           </button>
-          <button type="submit" @click="handleSubmit" class="btn btn-primary">
+          <button type="submit" @click="handleSubmit" class="btn btn-primary px-4 py-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
@@ -1231,7 +1231,9 @@ const handleManualRegenerate = async (item) => {
   if (!confirmed) return
   
   try {
-    const response = await instance.post(`/api/v1/datasets/${item.id}/regenerate`)
+    const response = await instance.post(`/api/v1/datasets/${item.id}/regenerate`, null, {
+      timeout: 60000 // 60秒超時
+    })
     toast.success('重新生成已開始，請稍候...')
     
     // 立即更新本地狀態為重新生成中
@@ -1499,7 +1501,9 @@ const generateData = async () => {
     const payload = {
       selected_article_ids: selectedRegulations.value
     }
-    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload)
+    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
+      timeout: 60000 // 60秒超時
+    })
     generatedData.value = response.data
   } catch (err) {
     error.value = `生成資料失敗: ${err.response?.data?.detail || '未知錯誤'}`
@@ -1524,7 +1528,9 @@ const regenerateData = async () => {
     const payload = {
       selected_article_ids: selectedRegulations.value
     }
-    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload)
+    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
+      timeout: 60000 // 60秒超時
+    })
     generatedData.value = response.data
     toast.success('資料重新生成完成！')
   } catch (err) {

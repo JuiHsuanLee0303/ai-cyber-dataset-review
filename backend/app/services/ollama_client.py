@@ -25,6 +25,7 @@ class OllamaClient:
             "model": self.model,
             "prompt": full_prompt,
             "stream": False,  # We want the full response at once
+            "think": False,
         }
 
         try:
@@ -163,7 +164,7 @@ class OllamaClient:
 {
   "instruction": "明確的指令內容",
   "input": "輸入內容（如果有的話）",
-  "output": "期望的輸出內容",
+  "output": "依照instruction、input以及提供的法規條文，輸出相對應的回答",
   "system": "系統提示內容"
 }"""
         
@@ -181,10 +182,11 @@ class OllamaClient:
         prompt_parts.append("要求：")
         prompt_parts.append("1. instruction：清楚明確的指令，讓AI知道要執行什麼任務")
         prompt_parts.append("2. input：模擬一般用戶的提問，使用簡單易懂的語言")
-        prompt_parts.append("3. output：專業且準確的回答，符合法規要求")
+        prompt_parts.append("3. output：專業且準確的回答，符合法規要求，請不要包含思考過程，直接提供答案")
         prompt_parts.append("4. system：設定AI的角色和行為準則")
         prompt_parts.append("5. history：保持為空陣列")
         prompt_parts.append("6. 確保內容與選取的法規條文相關且準確")
+        prompt_parts.append("7. 請以繁體中文回答")
         
         # Combine all parts
         full_prompt = "\n\n".join(prompt_parts)
