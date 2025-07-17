@@ -40,7 +40,7 @@ instance.interceptors.request.use(
     // 添加請求日誌
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`)
     // 添加 ngrok-skip-browser-warning header
-    config.headers['ngrok-skip-browser-warning'] = 'any-value'
+    config.headers['ngrok-skip-browser-warning'] = '69420'
     return config
   },
   (error) => {
