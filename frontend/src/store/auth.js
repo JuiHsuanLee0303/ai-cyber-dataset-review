@@ -7,14 +7,8 @@ const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
-  
-  // 如果是開發環境且在同一個域名下，使用相對路徑
-  if (import.meta.env.DEV && window.location.hostname === 'localhost') {
-    return ''
-  }
-  
-  // 否則使用當前域名
-  return window.location.origin
+
+  return 'http://localhost:8000'
 }
 
 const API_URL = getApiUrl()
