@@ -21,48 +21,30 @@
             <div class="text-2xl sm:text-3xl font-bold text-gray-400">{{ datasets.length }}</div>
             <div class="text-xs sm:text-sm text-gray-500">總項目</div>
           </div>
-          <div class="w-32 sm:w-40 bg-gray-200 rounded-full h-3">
-            <div 
-              class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm"
-              :style="{ width: `${((currentIndex + 1) / datasets.length) * 100}%` }"
-            ></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 審核指引 -->
-      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-6">
-        <div class="flex items-start space-x-4">
-          <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-base sm:text-lg font-semibold text-blue-900 mb-3">審核指引</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-blue-800">
-              <div class="flex items-start space-x-2">
-                <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <span class="font-medium">Instruction</span>：檢查指令是否清楚明確，能讓AI理解要執行什麼任務
-                </div>
+          <div class="relative w-32 sm:w-40">
+            <div class="w-full bg-gray-100 rounded-full h-4 border-2 border-gray-200 shadow-inner overflow-hidden">
+              <div 
+                class="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 h-full rounded-full transition-all duration-700 ease-out shadow-lg relative"
+                :style="{ width: `${((currentIndex + 1) / datasets.length) * 100}%` }"
+              >
+                <!-- 進度條光澤效果 -->
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                <!-- 進度條動畫效果 -->
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
               </div>
-              <div class="flex items-start space-x-2">
-                <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <span class="font-medium">Output</span>：評估AI的回答是否符合資安法規要求，對實務有幫助
-                </div>
+            </div>
+            <!-- 進度百分比標籤 -->
+            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2">
+              <div class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg">
+                {{ Math.round(((currentIndex + 1) / datasets.length) * 100) }}%
               </div>
-              <div class="flex items-start space-x-2">
-                <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <span class="font-medium">Source</span>：確認法規依據是否正確相關，內容是否準確
-                </div>
-              </div>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
             </div>
           </div>
         </div>
       </div>
+      
+
     </div>
     
     <div v-if="loading" class="text-center py-20">
@@ -91,9 +73,9 @@
     <div v-else class="space-y-6">
       <!-- 審核操作 -->
       <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+        <div class="bg-gradient-to-r from-orange-100 to-yellow-50 px-6 py-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">審核決定</h3>
+            <h3 class="text-xl font-semibold text-gray-900">審核決定</h3>
             <div class="flex items-center space-x-2 text-sm text-gray-600">
               <div class="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>請仔細審核後做出決定</span>
@@ -148,7 +130,7 @@
         <div class="xl:col-span-2 space-y-6">
           <!-- 指令區域 -->
           <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-pink-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="bg-gradient-to-r from-purple-100 to-pink-50 px-6 py-4 border-b border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -158,7 +140,7 @@
                   </div>
                   <div>
                     <h3 class="text-lg font-semibold text-gray-900">指令 (Instruction)</h3>
-                    <p class="text-sm text-gray-600">告訴AI要執行什麼任務</p>
+                    <p class="text-sm text-gray-600">檢查指令是否清楚明確，能讓AI理解要執行什麼任務</p>
                   </div>
                 </div>
               </div>
@@ -197,7 +179,7 @@
 
           <!-- 統一對話顯示區域 -->
           <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div class="bg-gradient-to-r from-indigo-100 to-blue-50 px-6 py-4 border-b border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -207,7 +189,7 @@
                   </div>
                   <div>
                     <h3 class="text-lg font-semibold text-gray-900">完整對話流程</h3>
-                    <p class="text-sm text-gray-600">包含歷史對話和當前審核重點</p>
+                    <p class="text-sm text-gray-600">評估AI的回答是否符合資安法規要求，對實務有幫助</p>
                   </div>
                 </div>
                 <div class="hidden sm:flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium">
@@ -319,7 +301,7 @@
         <div class="space-y-6">
           <!-- 法規依據 -->
           <div v-if="currentItem.source && currentItem.source.length > 0" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+            <div class="bg-gradient-to-r from-green-100 to-emerald-50 px-6 py-4 border-b border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -329,7 +311,7 @@
                   </div>
                   <div>
                     <h3 class="text-lg font-semibold text-gray-900">法規依據 (Source)</h3>
-                    <p class="text-sm text-gray-600">生成資料所依據的資安法規</p>
+                    <p class="text-sm text-gray-600">確認法規依據是否正確相關，內容是否準確</p>
                   </div>
                 </div>
                 <!-- <div class="hidden sm:flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
