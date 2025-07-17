@@ -51,20 +51,6 @@
         <div v-if="state.user && state.user.role === 'admin'" class="pt-6">
           <p class="text-xs text-gray-400 uppercase tracking-wider px-4">管理員</p>
           <router-link 
-            to="/admin/users" 
-            @click="closeMobileMenu"
-            class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
-          >
-            <span class="mx-4">使用者管理</span>
-          </router-link>
-          <router-link 
-            to="/admin/settings" 
-            @click="closeMobileMenu"
-            class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
-          >
-            <span class="mx-4">系統設定</span>
-          </router-link>
-          <router-link 
             to="/admin/raw-data" 
             @click="closeMobileMenu"
             class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
@@ -84,6 +70,20 @@
             class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
           >
             <span class="mx-4">法規管理</span>
+          </router-link>
+          <router-link 
+            to="/admin/users" 
+            @click="closeMobileMenu"
+            class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
+          >
+            <span class="mx-4">使用者管理</span>
+          </router-link>
+          <router-link 
+            to="/admin/settings" 
+            @click="closeMobileMenu"
+            class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-200"
+          >
+            <span class="mx-4">系統設定</span>
           </router-link>
         </div>
       </nav>
