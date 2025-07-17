@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: true, // Allow access from outside the container
     allowedHosts: ['initially-daring-foxhound.ngrok-free.app'],
+    historyApiFallback: true, // Add this line
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
