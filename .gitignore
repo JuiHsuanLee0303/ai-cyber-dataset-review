@@ -23,3 +23,5 @@ __pycache__/
 
 # Application Data
 /data/
+
+node_modules/
