@@ -150,90 +150,48 @@ class OllamaClient:
 
     async def generate_from_regulations(self, article_contents: List[str]) -> Dict[str, Any]:
         """
-        Generate a complete dataset from legal regulations using the new prompt.
+        Generate a complete dataset from legal regulations using generate_structured_dataset.
         Returns a dictionary with instruction, input, output, system, history, and source fields.
         """
         
-        # Build the prompt for regulation-based generation
-        prompt_parts = []
+        # 構建指令內容
+        instruction = "請根據提供的法律條文，撰寫相對應的問答集"
         
-        # 1. System context and role definition
-        system_context = """你是一位資安專家，專門協助生成高品質的指令微調資料集。你的任務是根據提供的法律條文，撰寫相對應的問答集。
+        # 構建輸入內容（模擬一般用戶的提問）
+        input_text = "我想了解這些法律條文的具體要求和應用方式"
+        
+        # 構建系統提示
+        system_prompt = """你是一位資安專家，專門協助解答資安相關問題。請根據提供的法律條文，為不具有資安管理專業的用戶提供清楚易懂的解釋和建議。
 
-請嚴格按照以下 JSON 格式輸出，不要包含任何其他文字：
-{
-  "instruction": "明確的指令內容",
-  "input": "輸入內容（如果有的話）",
-  "output": "依照instruction、input以及提供的法規條文，輸出相對應的回答",
-  "system": "系統提示內容"
-}"""
-        
-        prompt_parts.append(system_context)
-        
-        # 2. Legal articles content
-        prompt_parts.append("## 法律條文")
-        for i, content in enumerate(article_contents, 1):
-            prompt_parts.append(f"{i}. {content}")
-        
-        # 3. Generation requirements
-        prompt_parts.append("## 生成要求")
-        prompt_parts.append("請依照附上的法律條文撰寫相對應的問答集，其中input的使用者為不具有資安管理專業的用戶。請以簡單明瞭的方式撰寫instruction、input、output、system、history、source。")
-        prompt_parts.append("")
-        prompt_parts.append("要求：")
-        prompt_parts.append("1. instruction：清楚明確的指令，讓AI知道要執行什麼任務")
-        prompt_parts.append("2. input：模擬一般用戶的提問，使用簡單易懂的語言")
-        prompt_parts.append("3. output：專業且準確的回答，符合法規要求，請不要包含思考過程，直接提供答案")
-        prompt_parts.append("4. system：設定AI的角色和行為準則")
-        prompt_parts.append("5. history：保持為空陣列")
-        prompt_parts.append("6. 確保內容與選取的法規條文相關且準確")
-        prompt_parts.append("7. 請以繁體中文回答")
-        
-        # Combine all parts
-        full_prompt = "\n\n".join(prompt_parts)
+要求：
+1. 使用簡單明瞭的語言解釋法規要求
+2. 提供實用的建議和最佳實踐
+3. 確保回答準確且符合法規要求
+4. 不要包含思考過程，直接提供答案
+5. 請以繁體中文回答"""
+
+        # 將法律條文作為來源資訊
+        source = article_contents
         
         try:
-            response = await self.generate(full_prompt)
+            # 使用 generate_structured_dataset 來確保結構化輸出
+            result = await self.generate_structured_dataset(
+                instruction=instruction,
+                input_text=input_text,
+                system_prompt=system_prompt,
+                source=source
+            )
             
-            # Parse JSON response
-            import json
-            try:
-                # Try to extract JSON from the response
-                json_start = response.find('{')
-                json_end = response.rfind('}') + 1
-                if json_start != -1 and json_end != 0:
-                    json_str = response[json_start:json_end]
-                    result = json.loads(json_str)
-                else:
-                    # Fallback: try to parse the entire response
-                    result = json.loads(response)
-                
-                # Ensure all required fields are present
-                if "instruction" not in result:
-                    result["instruction"] = "請根據相關法規提供建議"
-                if "input" not in result:
-                    result["input"] = ""
-                if "output" not in result:
-                    result["output"] = "無法生成輸出內容"
-                if "system" not in result:
-                    result["system"] = "你是一位資安專家，專門協助解答資安相關問題"
-                if "history" not in result:
-                    result["history"] = []
-                
-                return result
-                
-            except json.JSONDecodeError as e:
-                print(f"JSON parsing error: {e}")
-                print(f"Raw response: {response}")
-                
-                # Fallback: return structured response
-                return {
-                    "instruction": "請根據相關法規提供建議",
-                    "input": "",
-                    "output": response.strip(),
-                    "system": "你是一位資安專家，專門協助解答資安相關問題",
-                    "history": []
-                }
-                
+            # 確保所有必要欄位都存在
+            if "system" not in result:
+                result["system"] = system_prompt
+            if "history" not in result:
+                result["history"] = []
+            if "source" not in result:
+                result["source"] = source
+            
+            return result
+            
         except Exception as e:
             print(f"Generation error: {e}")
             raise e
