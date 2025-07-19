@@ -2,16 +2,18 @@
   <div class="container mx-auto px-4 py-8">
     <!-- 頁面標題和進度 -->
     <div class="mb-6 sm:mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">資料審核</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 sm:mb-0">資料審核</h1>
         <div class="flex items-center space-x-6">
-          <div class="text-center">
-            <div class="text-2xl sm:text-3xl font-bold text-primary-main">{{ datasets.length == 0 ? 0 : currentIndex + 1 }}</div>
-            <div class="text-xs sm:text-sm text-neutral-500">當前項目</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl sm:text-3xl font-bold text-neutral-400">{{ datasets.length }}</div>
-            <div class="text-xs sm:text-sm text-neutral-500">總項目</div>
+          <div class="flex items-center justify-between space-x-6">
+            <div class="text-center">
+              <div class="text-2xl sm:text-3xl font-bold text-primary-main">{{ datasets.length == 0 ? 0 : currentIndex + 1 }}</div>
+              <div class="text-xs sm:text-sm text-neutral-500">當前項目</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl sm:text-3xl font-bold text-neutral-400">{{ datasets.length }}</div>
+              <div class="text-xs sm:text-sm text-neutral-500">總項目</div>
+            </div>
           </div>
           <div class="relative w-32 sm:w-40">
             <div class="w-full bg-neutral-200 rounded-full h-4 border-2 border-neutral-300 shadow-inner overflow-hidden">
@@ -48,7 +50,7 @@
         </svg>
       </div>
       <h2 class="text-3xl font-bold text-neutral-900 mb-3">審核完成！</h2>
-      <p class="text-lg text-neutral-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
+      <p class="text-sm sm:text-lg text-neutral-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
       <button @click="fetchDatasets" class="inline-flex items-center px-6 py-3 bg-primary-main text-white font-medium rounded-xl hover:bg-primary-dark transition-all duration-200 shadow-sm hover:shadow-md">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>

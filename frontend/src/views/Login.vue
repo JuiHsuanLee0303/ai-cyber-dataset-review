@@ -104,7 +104,7 @@
         </div>
           
         <!-- 右側：系統核心功能 -->
-        <div class="order-2 lg:order-1 h-full flex flex-col">
+        <div class="order-2 lg:order-1 h-full flex flex-col col-span-2 sm:col-span-1">
           <!-- 系統功能區塊 -->
           <div class="hidden sm:block bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-4 lg:p-5 shadow-lg flex-1 mb-4">
             <h3 class="text-base lg:text-lg font-semibold text-slate-800 mb-4 flex items-center">
