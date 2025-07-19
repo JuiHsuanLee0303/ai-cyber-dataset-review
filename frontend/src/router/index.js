@@ -6,6 +6,7 @@ import Layout from '../components/Layout.vue'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Review from '../views/Review.vue'
+import About from '../views/About.vue'
 import AdminUsers from '../views/AdminUsers.vue'
 import AdminSettings from '../views/AdminSettings.vue'
 import AdminData from '../views/AdminData.vue'
@@ -27,6 +28,11 @@ const routes = [
     children: [
       {
         path: '',
+        name: 'About',
+        component: About,
+      },
+      {
+        path: 'dashboard',
         name: 'Dashboard',
         component: Dashboard,
       },
@@ -97,7 +103,7 @@ router.beforeEach((to, from, next) => {
   } else if (requiresAuth && requiredRoles.length > 0 && !requiredRoles.includes(state.user.role)) {
     // User does not have the required role
     toast.error('您沒有權限訪問此頁面。')
-    next('/') // Redirect to dashboard
+    next('/') // Redirect to home page (About)
   } else {
     // Proceed as normal
     next()

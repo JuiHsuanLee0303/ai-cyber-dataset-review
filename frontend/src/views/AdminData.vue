@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800">最終資料集管理</h1>
       <div class="flex space-x-3">
@@ -19,9 +19,8 @@
     </div>
     
     <div v-else-if="finalDataset.length === 0" class="text-center py-10 bg-white rounded-lg shadow-md">
-      <div class="text-gray-400 text-6xl mb-4">✅</div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">沒有最終資料</h3>
-      <p class="text-gray-500">目前沒有已通過審核的最終資料集。</p>
+      <h3 class="text-3xl font-medium text-gray-900 mb-2">沒有最終資料</h3>
+      <p class="text-gray-500 text-sm">目前沒有已通過審核的最終資料集。</p>
     </div>
     
     <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

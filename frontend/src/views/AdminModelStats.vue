@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">模型統計管理</h1>
+      <h1 class="text-3xl font-bold text-gray-800">模型統計管理</h1>
       <div class="flex space-x-4">
         <button 
           @click="showRefreshModal = true" 

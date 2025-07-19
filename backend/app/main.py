@@ -67,8 +67,8 @@ def create_app() -> FastAPI:
             # Initialize default system settings
             default_settings = {
                 "rejection_threshold": 3,
-                "approval_threshold": 2,
-                "ollama_models": ["qwen3:1.7b"],  # 修改：支援多模型列表
+                "approval_threshold": 3,
+                "ollama_models": [],
                 "ollama_url": "http://host.docker.internal:11434"
             }
             

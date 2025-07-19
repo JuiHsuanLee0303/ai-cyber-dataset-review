@@ -1,67 +1,55 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto px-4 py-8">
     <!-- 頁面標題和進度 -->
     <div class="mb-6 sm:mb-8">
-      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
-        <div class="flex items-center space-x-4">
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">資料審核</h1>
-          <div class="hidden sm:flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            審核模式
-          </div>
-        </div>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">資料審核</h1>
         <div class="flex items-center space-x-6">
           <div class="text-center">
-            <div class="text-2xl sm:text-3xl font-bold text-blue-600">{{ currentIndex + 1 }}</div>
-            <div class="text-xs sm:text-sm text-gray-500">當前項目</div>
+            <div class="text-2xl sm:text-3xl font-bold text-primary-main">{{ datasets.length == 0 ? 0 : currentIndex + 1 }}</div>
+            <div class="text-xs sm:text-sm text-neutral-500">當前項目</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl sm:text-3xl font-bold text-gray-400">{{ datasets.length }}</div>
-            <div class="text-xs sm:text-sm text-gray-500">總項目</div>
+            <div class="text-2xl sm:text-3xl font-bold text-neutral-400">{{ datasets.length }}</div>
+            <div class="text-xs sm:text-sm text-neutral-500">總項目</div>
           </div>
           <div class="relative w-32 sm:w-40">
-            <div class="w-full bg-gray-100 rounded-full h-4 border-2 border-gray-200 shadow-inner overflow-hidden">
+            <div class="w-full bg-neutral-200 rounded-full h-4 border-2 border-neutral-300 shadow-inner overflow-hidden">
               <div 
-                class="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 h-full rounded-full transition-all duration-700 ease-out shadow-lg relative"
+                class="bg-gradient-to-r from-primary-light via-primary-main to-primary-dark h-full rounded-full transition-all duration-700 ease-out shadow-lg relative"
                 :style="{ width: `${((currentIndex + 1) / datasets.length) * 100}%` }"
               >
                 <!-- 進度條光澤效果 -->
                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                <!-- 進度條動畫效果 -->
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
               </div>
             </div>
             <!-- 進度百分比標籤 -->
             <div class="absolute -top-8 left-1/2 transform -translate-x-1/2">
-              <div class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg">
+              <div class="bg-primary-main text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg">
                 {{ Math.round(((currentIndex + 1) / datasets.length) * 100) }}%
               </div>
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary-main"></div>
             </div>
           </div>
         </div>
       </div>
-      
-
     </div>
     
     <div v-if="loading" class="text-center py-20">
-      <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
-      <p class="text-lg text-gray-600 font-medium">載入審核資料中...</p>
-      <p class="text-sm text-gray-500 mt-2">請稍候，正在準備您的審核項目</p>
+      <div class="animate-spin rounded-full h-16 w-16 border-4 border-primary-light border-t-primary-main mx-auto mb-6"></div>
+      <p class="text-lg text-neutral-600 font-medium">載入審核資料中...</p>
+      <p class="text-sm text-neutral-500 mt-2">請稍候，正在準備您的審核項目</p>
     </div>
 
-    <div v-else-if="!currentItem" class="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
+    <div v-else-if="!currentItem" class="text-center py-20 bg-white rounded-2xl border border-neutral-200 shadow-sm">
       <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
       </div>
-      <h2 class="text-3xl font-bold text-gray-900 mb-3">審核完成！</h2>
-      <p class="text-lg text-gray-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
-      <button @click="fetchDatasets" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
+      <h2 class="text-3xl font-bold text-neutral-900 mb-3">審核完成！</h2>
+      <p class="text-lg text-neutral-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
+      <button @click="fetchDatasets" class="inline-flex items-center px-6 py-3 bg-primary-main text-white font-medium rounded-xl hover:bg-primary-dark transition-all duration-200 shadow-sm hover:shadow-md">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
@@ -72,11 +60,11 @@
     <!-- 主要審核區域 -->
     <div v-else class="space-y-6">
       <!-- 審核操作 -->
-      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-orange-100 to-yellow-50 px-6 py-4 border-b border-gray-200">
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-100 to-yellow-50 px-6 py-4 border-b border-neutral-200">
           <div class="flex items-center justify-between">
-            <h3 class="text-xl font-semibold text-gray-900">審核決定</h3>
-            <div class="flex items-center space-x-2 text-sm text-gray-600">
+            <h3 class="text-xl font-semibold text-neutral-900">審核決定</h3>
+            <div class="flex items-center space-x-2 text-sm text-neutral-600">
               <div class="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>請仔細審核後做出決定</span>
             </div>
@@ -84,9 +72,9 @@
         </div>
         <div class="p-6">
           <div v-if="currentItem.review_status === 'regenerating'" class="text-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-            <p class="text-lg text-gray-700 font-medium mb-2">重新生成中...</p>
-            <p class="text-sm text-gray-500">請稍候，系統正在重新生成此筆資料</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary-light border-t-primary-main mx-auto mb-4"></div>
+            <p class="text-lg text-neutral-700 font-medium mb-2">重新生成中...</p>
+            <p class="text-sm text-neutral-500">請稍候，系統正在重新生成此筆資料</p>
           </div>
           <div v-else class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -110,7 +98,7 @@
               </button>
               <button 
                 @click="nextItem"
-                class="group flex items-center justify-center space-x-3 px-6 py-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                class="group flex items-center justify-center space-x-3 px-6 py-4 bg-neutral-100 text-neutral-700 font-medium rounded-xl hover:bg-neutral-200 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
               >
                 <svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
@@ -119,7 +107,7 @@
               </button>
             </div>
             <div class="text-center">
-              <p class="text-sm text-gray-500">使用鍵盤快捷鍵：<span class="font-mono bg-gray-100 px-2 py-1 rounded">A</span> 接受 | <span class="font-mono bg-gray-100 px-2 py-1 rounded">R</span> 拒絕 | <span class="font-mono bg-gray-100 px-2 py-1 rounded">S</span> 跳過</p>
+              <p class="text-sm text-neutral-500">使用鍵盤快捷鍵：<span class="font-mono bg-neutral-100 px-2 py-1 rounded">A</span> 接受 | <span class="font-mono bg-neutral-100 px-2 py-1 rounded">R</span> 拒絕 | <span class="font-mono bg-neutral-100 px-2 py-1 rounded">S</span> 跳過</p>
             </div>
           </div>
         </div>
@@ -129,57 +117,30 @@
         <!-- 左側：指令和輸入 -->
         <div class="xl:col-span-2 space-y-6">
           <!-- 指令區域 -->
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-100 to-pink-50 px-6 py-4 border-b border-gray-200">
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-purple-100 to-pink-50 px-6 py-4 border-b border-neutral-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                  <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="w-10 h-10 bg-primary-light rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-primary-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-semibold text-gray-900">指令 (Instruction)</h3>
-                    <p class="text-sm text-gray-600">檢查指令是否清楚明確，能讓AI理解要執行什麼任務</p>
+                    <h3 class="text-lg font-semibold text-neutral-900">指令 (Instruction)</h3>
+                    <p class="text-sm text-neutral-600">檢查指令是否清楚明確，能讓AI理解要執行什麼任務</p>
                   </div>
                 </div>
               </div>
             </div>
             <div class="p-6">
-              <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-800 whitespace-pre-wrap leading-relaxed text-base">
+              <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-neutral-800 whitespace-pre-wrap leading-relaxed text-base">
                 {{ currentItem.instruction }}
               </div>
             </div>
           </div>
-
-          <!-- System Prompt (如果有) -->
-          <!-- <div v-if="currentItem.system" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                  <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 class="text-lg font-semibold text-gray-900">系統設定 (System)</h3>
-                    <p class="text-sm text-gray-600">設定AI的角色和行為準則</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="p-6">
-              <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-800 whitespace-pre-wrap leading-relaxed text-base">
-                {{ currentItem.system }}
-              </div>
-            </div>
-          </div> -->
-
-          <!-- 統一對話顯示區域 -->
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-indigo-100 to-blue-50 px-6 py-4 border-b border-gray-200">
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-100 to-blue-50 px-6 py-4 border-b border-neutral-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -188,8 +149,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-semibold text-gray-900">完整對話流程</h3>
-                    <p class="text-sm text-gray-600">評估AI的回答是否符合資安法規要求，對實務有幫助</p>
+                    <h3 class="text-lg font-semibold text-neutral-900">完整對話流程</h3>
+                    <p class="text-sm text-neutral-600">評估AI的回答是否符合資安法規要求，對實務有幫助</p>
                   </div>
                 </div>
                 <div class="hidden sm:flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium">
@@ -198,57 +159,43 @@
               </div>
             </div>
             <div class="p-6">
-              <div class="space-y-8">
+              <div class="space-y-6">
                 <!-- 歷史對話 -->
-                <div v-if="currentItem.history && currentItem.history.length > 0" class="space-y-6">
-                  <div v-for="(conversation, index) in currentItem.history" :key="index" class="space-y-4">
-                    <!-- 對話編號 -->
+                <div v-for="(conversation, index) in currentItem.history" :key="index" class="relative">
+                  <div class="space-y-4 p-5 rounded-2xl border border-neutral-200 bg-neutral-50">
                     <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-bold text-gray-600">{{ index + 1 }}</span>
+                      <div class="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-bold text-neutral-600">{{ index + 1 }}</span>
                       </div>
-                      <span class="text-base font-medium text-gray-500">歷史對話 {{ index + 1 }}</span>
+                      <span class="text-base font-medium text-neutral-500">歷史對話 {{ index + 1 }}</span>
                     </div>
-                    
-                    <!-- 問題 -->
                     <div class="flex space-x-4">
-                      <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-gray-100 text-gray-600">
-                        Q
-                      </div>
+                      <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-neutral-100 text-neutral-600">Q</div>
                       <div class="flex-1">
-                        <div class="text-sm text-gray-400 mb-2 font-medium">問題</div>
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-700 whitespace-pre-wrap leading-relaxed text-base">
+                        <div class="text-sm text-neutral-400 mb-2 font-medium">問題</div>
+                        <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-neutral-700 whitespace-pre-wrap leading-relaxed text-base">
                           {{ conversation[0] }}
                         </div>
                       </div>
                     </div>
-                    
-                    <!-- 回答 -->
                     <div class="flex space-x-4">
-                      <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-gray-100 text-gray-600">
-                        A
-                      </div>
+                      <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-neutral-100 text-neutral-600">A</div>
                       <div class="flex-1">
-                        <div class="text-sm text-gray-400 mb-2 font-medium">回答</div>
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-700 whitespace-pre-wrap leading-relaxed text-base">
+                        <div class="text-sm text-neutral-400 mb-2 font-medium">回答</div>
+                        <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-neutral-700 whitespace-pre-wrap leading-relaxed text-base">
                           {{ conversation[1] }}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <!-- 當前審核重點對話 - 特別突出顯示 -->
                 <div class="relative">
-                  <!-- 審核重點標籤 -->
                   <div class="absolute -top-3 left-4 z-10">
                     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                       🔍 審核重點
                     </div>
                   </div>
-                  
                   <div class="border-2 border-blue-300 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
-                    <!-- 當前問題 (Input) -->
                     <div v-if="currentItem.input" class="space-y-4 mb-6">
                       <div class="flex items-center space-x-3 mb-3">
                         <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
@@ -256,25 +203,21 @@
                         </div>
                         <span class="text-sm font-bold text-blue-800">當前問題</span>
                       </div>
-                      <div class="bg-white border-2 border-blue-200 rounded-xl p-4 text-gray-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
+                      <div class="bg-white border-2 border-blue-200 rounded-xl p-4 text-neutral-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
                         {{ currentItem.input }}
                       </div>
                     </div>
-                    
-                    <!-- 指令 (Instruction) 作為問題 -->
                     <div v-if="!currentItem.input" class="space-y-4 mb-6">
                       <div class="flex items-center space-x-3 mb-3">
                         <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span class="text-xs font-bold text-blue-800">Q</span>
+                          <span class="text-xs font-bold text-blue-800">指令</span>
                         </div>
                         <span class="text-sm font-bold text-blue-800">指令</span>
                       </div>
-                      <div class="bg-white border-2 border-blue-200 rounded-xl p-4 text-gray-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
+                      <div class="bg-white border-2 border-blue-200 rounded-xl p-4 text-neutral-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
                         {{ currentItem.instruction }}
                       </div>
                     </div>
-                    
-                    <!-- AI回答 (Output) -->
                     <div class="space-y-4">
                       <div class="flex items-center space-x-3 mb-3">
                         <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
@@ -286,7 +229,7 @@
                           <span class="text-xs text-green-600 font-medium">需要審核</span>
                         </div>
                       </div>
-                      <div class="bg-white border-2 border-green-200 rounded-xl p-4 text-gray-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
+                      <div class="bg-white border-2 border-green-200 rounded-xl p-4 text-neutral-800 whitespace-pre-wrap leading-relaxed text-base shadow-sm">
                         {{ currentItem.output }}
                       </div>
                     </div>
@@ -296,12 +239,9 @@
             </div>
           </div>
         </div>
-
-        <!-- 右側：法規依據和資料狀態 -->
         <div class="space-y-6">
-          <!-- 法規依據 -->
-          <div v-if="currentItem.source && currentItem.source.length > 0" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-green-100 to-emerald-50 px-6 py-4 border-b border-gray-200">
+          <div v-if="currentItem.source && currentItem.source.length > 0" class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-green-100 to-emerald-50 px-6 py-4 border-b border-neutral-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -310,13 +250,10 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-semibold text-gray-900">法規依據 (Source)</h3>
-                    <p class="text-sm text-gray-600">確認法規依據是否正確相關，內容是否準確</p>
+                    <h3 class="text-lg font-semibold text-neutral-900">法規依據 (Source)</h3>
+                    <p class="text-sm text-neutral-600">確認法規依據是否正確相關，內容是否準確</p>
                   </div>
                 </div>
-                <!-- <div class="hidden sm:flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                  {{ currentItem.source.length }} 條
-                </div> -->
               </div>
             </div>
             <div class="p-6">
@@ -326,9 +263,9 @@
                     <div class="text-sm font-medium text-green-800 mb-3">{{ src }}</div>
                     <div v-if="sourceDetails[index]" class="bg-white border border-green-200 rounded-xl p-4">
                       <div class="text-sm text-green-600 font-medium mb-3">法規內容：</div>
-                      <div class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ sourceDetails[index].content }}</div>
+                      <div class="text-sm text-neutral-800 whitespace-pre-wrap leading-relaxed">{{ sourceDetails[index].content }}</div>
                     </div>
-                    <div v-else-if="sourceLoading[index]" class="flex items-center space-x-3 text-sm text-gray-500">
+                    <div v-else-if="sourceLoading[index]" class="flex items-center space-x-3 text-sm text-neutral-500">
                       <div class="animate-spin rounded-full h-4 w-4 border-2 border-green-200 border-t-green-600"></div>
                       <span>載入法規內容...</span>
                     </div>
@@ -340,24 +277,22 @@
               </div>
             </div>
           </div>
-
-          <!-- 資料狀態 -->
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-900">資料狀態</h3>
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-neutral-50 to-neutral-100 px-6 py-4 border-b border-neutral-200">
+              <h3 class="text-lg font-semibold text-neutral-900">資料狀態</h3>
             </div>
             <div class="p-6">
               <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                  <span class="text-sm text-gray-600">資料ID</span>
-                  <span class="text-sm font-bold text-gray-900">#{{ currentItem.id }}</span>
+                <div class="flex justify-between items-center p-3 bg-neutral-50 rounded-xl">
+                  <span class="text-sm text-neutral-600">資料ID</span>
+                  <span class="text-sm font-bold text-neutral-900">#{{ currentItem.id }}</span>
                 </div>
                 <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl">
-                  <span class="text-sm text-gray-600">通過次數</span>
+                  <span class="text-sm text-neutral-600">通過次數</span>
                   <span class="text-sm font-bold text-green-600">{{ currentItem.accept_count }}</span>
                 </div>
                 <div class="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                  <span class="text-sm text-gray-600">拒絕次數</span>
+                  <span class="text-sm text-neutral-600">拒絕次數</span>
                   <span class="text-sm font-bold text-red-600">{{ currentItem.reject_count }}</span>
                 </div>
               </div>
@@ -366,28 +301,24 @@
         </div>
       </div>
     </div>
-
-    <!-- 拒絕模態框 -->
     <div v-if="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-auto max-h-[90vh] overflow-y-auto">
-        <div class="px-6 py-4 border-b border-gray-200">
+        <div class="px-6 py-4 border-b border-neutral-200">
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-xl font-semibold text-gray-900">拒絕原因</h3>
-              <p class="text-sm text-gray-600 mt-1">請選擇常見拒絕理由並填寫詳細說明，這將幫助改進資料品質</p>
+              <h3 class="text-xl font-semibold text-neutral-900">拒絕原因</h3>
+              <p class="text-sm text-neutral-600 mt-1">請選擇常見拒絕理由並填寫詳細說明，這將幫助改進資料品質</p>
             </div>
-            <button @click="cancelReject" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <button @click="cancelReject" class="text-neutral-400 hover:text-neutral-600 transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
         </div>
-        
         <div class="p-6 space-y-8">
-          <!-- 常見拒絕理由選擇 -->
           <div>
-            <label class="block text-lg font-semibold text-gray-700 mb-4">
+            <label class="block text-lg font-semibold text-neutral-700 mb-4">
               常見拒絕理由 <span class="text-red-500">*</span>
             </label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -398,8 +329,8 @@
                 :class="[
                   'p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md',
                   selectedCommonReasons.includes(reason.id)
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary-light bg-primary-light shadow-md'
+                    : 'border-neutral-200 hover:border-neutral-300'
                 ]"
               >
                 <div class="flex items-start space-x-4">
@@ -408,8 +339,8 @@
                       :class="[
                         'w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200',
                         selectedCommonReasons.includes(reason.id)
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300'
+                          ? 'border-primary-light bg-primary-light'
+                          : 'border-neutral-300'
                       ]"
                     >
                       <svg v-if="selectedCommonReasons.includes(reason.id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -418,18 +349,18 @@
                     </div>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="text-base font-medium text-gray-900 mb-2">{{ reason.label }}</div>
-                    <div class="text-sm text-gray-500 mb-3">{{ reason.description }}</div>
+                    <div class="text-base font-medium text-neutral-900 mb-2">{{ reason.label }}</div>
+                    <div class="text-sm text-neutral-500 mb-3">{{ reason.description }}</div>
                     <div class="inline-block px-3 py-1 text-xs font-medium rounded-full" 
                          :class="{
-                           'bg-blue-100 text-blue-800': reason.category === 'instruction',
+                           'bg-primary-light text-primary-dark': reason.category === 'instruction',
                            'bg-green-100 text-green-800': reason.category === 'output',
                            'bg-red-100 text-red-800': reason.category === 'source',
                            'bg-purple-100 text-purple-800': reason.category === 'input',
                            'bg-yellow-100 text-yellow-800': reason.category === 'format',
                            'bg-indigo-100 text-indigo-800': reason.category === 'content',
                            'bg-orange-100 text-orange-800': reason.category === 'security',
-                           'bg-gray-100 text-gray-800': reason.category === 'other'
+                           'bg-neutral-100 text-neutral-800': reason.category === 'other'
                          }">
                       {{ getCategoryLabel(reason.category) }}
                     </div>
@@ -441,40 +372,35 @@
               請至少選擇一個拒絕理由
             </div>
           </div>
-
-          <!-- 詳細拒絕理由 -->
           <div>
-            <label for="detailed-reason" class="block text-lg font-semibold text-gray-700 mb-4">
-              詳細拒絕理由 <span class="text-gray-500">(可選)</span>
+            <label for="detailed-reason" class="block text-lg font-semibold text-neutral-700 mb-4">
+              詳細拒絕理由 <span class="text-neutral-500">(可選)</span>
             </label>
             <textarea 
               id="detailed-reason"
               v-model="detailedRejectReason"
               rows="4"
-              class="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-base"
+              class="w-full p-4 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent resize-none text-base"
               placeholder="請詳細說明拒絕原因，提供具體的改進建議..."
             ></textarea>
           </div>
-
-          <!-- 額外備註 -->
           <div>
-            <label for="additional-comment" class="block text-lg font-semibold text-gray-700 mb-4">
-              額外備註 <span class="text-gray-500">(可選)</span>
+            <label for="additional-comment" class="block text-lg font-semibold text-neutral-700 mb-4">
+              額外備註 <span class="text-neutral-500">(可選)</span>
             </label>
             <textarea 
               id="additional-comment"
               v-model="rejectComment"
               rows="3"
-              class="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-base"
+              class="w-full p-4 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent resize-none text-base"
               placeholder="如有其他需要說明的內容，請在此填寫..."
             ></textarea>
           </div>
         </div>
-        
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+        <div class="px-6 py-4 border-t border-neutral-200 flex justify-end space-x-4">
           <button 
             @click="cancelReject" 
-            class="px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200"
+            class="px-6 py-3 bg-neutral-100 text-neutral-700 font-medium rounded-xl hover:bg-neutral-200 transition-all duration-200"
           >
             取消
           </button>

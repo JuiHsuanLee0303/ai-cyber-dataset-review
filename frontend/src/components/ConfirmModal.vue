@@ -1,13 +1,17 @@
 <template>
-  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mx-4">
-      <h3 class="text-xl font-bold mb-4 text-gray-800">{{ title }}</h3>
-      <p class="text-gray-600 mb-6">{{ message }}</p>
-      <div class="mt-6 flex justify-end space-x-4">
-        <button @click="onCancel" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-semibold">
+  <div v-if="show" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold text-neutral-800">{{ title }}</h3>
+      </div>
+      <div class="modal-body">
+        <p class="text-neutral-600">{{ message }}</p>
+      </div>
+      <div class="modal-footer">
+        <button @click="onCancel" class="btn btn-secondary">
           取消
         </button>
-        <button @click="onConfirm" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">
+        <button @click="onConfirm" class="btn btn-danger">
           確認
         </button>
       </div>

@@ -1,9 +1,8 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="container mx-auto px-4 py-8">
     <!-- Page Header -->
-    <div class="mb-8">
-      <h1 class="text-2xl md:text-4xl font-bold text-slate-800 mb-2">系統設定</h1>
-      <p class="text-slate-600 text-sm md:text-base">管理 AI 模型配置和審核系統參數</p>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">系統設定</h1>
     </div>
     
     <!-- Loading State -->
@@ -25,7 +24,7 @@
     </div>
     
     <!-- Main Content -->
-    <div v-else class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <div v-else>
       <form @submit.prevent="saveSettings" class="p-6 md:p-8">
         
         <!-- AI Model Settings Section -->
@@ -158,11 +157,11 @@
                 <!-- 統計信息 - 固定在頂部 -->
                 <div class="bg-blue-50 border-b border-blue-200 px-4 py-3 sticky top-0 z-10">
                   <div class="flex items-center justify-between text-sm md:text-base">
-                    <span class="text-blue-700">
+                    <span class="text-blue-800">
                       找到 {{ filteredModels.length }} 個模型
                       <span v-if="modelSearchQuery">（搜索："{{ modelSearchQuery }}"）</span>
                     </span>
-                    <span class="text-blue-600 font-medium">
+                    <span class="text-blue-800 font-medium">
                       已選擇 {{ form.ollama_models?.length || 0 }} 個
                     </span>
                   </div>
@@ -180,7 +179,7 @@
                   
                   <!-- 模型項目 -->
                   <div v-for="(model, index) in filteredModels" :key="model.name" 
-                       class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                       class="border-b border-slate-100 last:border-b-0 bg-white hover:bg-slate-50 transition-colors">
                     <label :for="'model-' + model.name" class="flex items-center p-4 cursor-pointer group">
                       <!-- 複選框 -->
                       <div class="relative">
@@ -189,11 +188,11 @@
                           :id="'model-' + model.name"
                           :value="model.name"
                           v-model="form.ollama_models"
-                          class="w-4 h-4 text-blue-600 bg-white border-2 border-slate-300 rounded focus:ring-blue-500 focus:ring-2 transition-colors"
+                          class="w-5 h-5 text-blue-600 bg-white border-2 border-slate-300 rounded-md focus:ring-2 focus:ring-offset-0 focus:ring-blue-500/30 focus:border-blue-600 transition-colors cursor-pointer"
                         />
                         <!-- 自定義選中狀態 -->
                         <svg v-if="form.ollama_models?.includes(model.name)" 
-                             class="absolute inset-0 w-4 h-4 text-blue-600 pointer-events-none" 
+                             class="absolute inset-0.5 w-4 h-4 text-white pointer-events-none" 
                              fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>

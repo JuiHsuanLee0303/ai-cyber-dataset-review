@@ -1,257 +1,125 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="container mx-auto px-4 py-8">
     <!-- Header Section -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="py-4 sm:py-6">
-          <!-- Mobile Header -->
-          <div class="sm:hidden">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h1 class="text-lg font-bold text-gray-900">待審核資料集</h1>
-                  <p class="text-xs text-gray-500">管理與審核AI訓練資料</p>
-                </div>
-              </div>
-              
-              <!-- Auto Update Indicator -->
-              <div v-if="isPolling" class="flex items-center space-x-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-full">
-                <div class="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600"></div>
-                <span class="text-xs font-medium text-blue-700">更新中</span>
-              </div>
-            </div>
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+      <!-- Title and Auto Update Indicator -->
+      <div class="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-0">
+        <!-- Title Section -->
+        <h1 class="text-3xl font-bold text-gray-800">待審核資料集管理</h1>
+        
+        <!-- Auto Update Indicator -->
+        <div v-if="isPolling" class="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 bg-blue-50 border border-blue-200 rounded-full mt-2 mb-3 sm:my-0 sm:ms-4">
+          <div class="animate-spin rounded-full h-2 w-2 sm:h-3 sm:w-3 border-b-2 border-blue-600"></div>
+          <span class="text-xs font-medium text-blue-700">
+            <span class="sm:hidden">更新中</span>
+            <span class="hidden sm:inline">自動更新中</span>
+          </span>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 sm:flex sm:items-center sm:space-x-2 gap-2 sm:gap-0 mb-4 sm:mb-0">
+        <button 
+          @click="fetchDatasets" 
+          class="btn btn-primary btn-sm w-full sm:w-auto"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>刷新</span>
+        </button>
+        
+        <button 
+          @click="openModal()" 
+          class="btn btn-success btn-sm w-full sm:w-auto"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>新增<span class="hidden sm:inline">資料</span></span>
+        </button>
+        
+        <button 
+          @click="openBatchModal()" 
+          class="btn btn-secondary btn-sm w-full sm:w-auto"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span>批量新增</span>
+        </button>
+        
+        <button 
+          @click="openGenerateModal()" 
+          class="btn btn-info btn-sm w-full sm:w-auto"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span><span class="sm:hidden">法規</span><span class="hidden sm:inline">從法規</span>生成</span>
+        </button>
+      </div>
+      
+      <!-- Display Mode Toggle and Batch Actions -->
+      <div class="flex items-center justify-between sm:justify-end sm:space-x-4">
+        <!-- Display Mode Toggle -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <span class="text-xs sm:text-sm font-medium text-gray-700">
+            <span class="sm:hidden">顯示</span>
+            <span class="hidden sm:inline">顯示模式</span>
+          </span>
+          <div class="relative flex bg-gray-300 rounded-lg p-1">
+            <div 
+              class="absolute top-1 bottom-1 bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out"
+              :class="displayMode === 'card' ? 'left-1 w-6 sm:w-8' : 'left-7 sm:left-9 w-6 sm:w-8'"
+            ></div>
             
-            <!-- Mobile Action Buttons -->
-            <div class="grid grid-cols-2 gap-2 mb-4">
-              <button 
-                @click="fetchDatasets" 
-                class="btn btn-primary btn-sm w-full"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                <span>刷新</span>
-              </button>
-              
-              <button 
-                @click="openModal()" 
-                class="btn btn-success btn-sm w-full"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span>新增</span>
-              </button>
-            </div>
+            <button 
+              @click="displayMode = 'card'"
+              class="relative z-10 w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
+              :class="displayMode === 'card' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+              title="卡片式顯示"
+            >
+              <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+              </svg>
+            </button>
             
-            <!-- Mobile Secondary Actions -->
-            <div class="grid grid-cols-2 gap-2 mb-4">
-              <button 
-                @click="openBatchModal()" 
-                class="btn btn-secondary btn-sm w-full"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <span>批量新增</span>
-              </button>
-              
-              <button 
-                @click="openGenerateModal()" 
-                class="btn btn-info btn-sm w-full"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-                <span>法規生成</span>
-              </button>
-            </div>
-            
-            <!-- Mobile Display Mode & Batch Actions -->
-            <div class="flex items-center justify-between">
-              <!-- Display Mode Toggle -->
-              <div class="flex items-center space-x-2">
-                <span class="text-xs font-medium text-gray-700">顯示</span>
-                <div class="relative flex bg-gray-200 rounded-lg p-1">
-                  <div 
-                    class="absolute top-1 bottom-1 w-6 bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out"
-                    :class="displayMode === 'card' ? 'left-1' : 'left-7'"
-                  ></div>
-                  
-                  <button 
-                    @click="displayMode = 'card'"
-                    class="relative z-10 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
-                    :class="displayMode === 'card' ? 'text-gray-800' : 'text-gray-500'"
-                    title="卡片式顯示"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                    </svg>
-                  </button>
-                  
-                  <button 
-                    @click="displayMode = 'list'"
-                    class="relative z-10 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
-                    :class="displayMode === 'list' ? 'text-gray-800' : 'text-gray-500'"
-                    title="列表式顯示"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              
-              <!-- Batch Actions -->
-              <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
-                <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                  {{ selectedItems.length }} 項
-                </span>
-                <button 
-                  @click="handleBatchDelete"
-                  class="btn btn-danger btn-sm"
-                >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                  </svg>
-                  <span class="hidden sm:inline">刪除</span>
-                </button>
-              </div>
-            </div>
+            <button 
+              @click="displayMode = 'list'"
+              class="relative z-10 w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
+              :class="displayMode === 'list' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+              title="列表式顯示"
+            >
+              <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+              </svg>
+            </button>
           </div>
-          
-          <!-- Desktop Header -->
-          <div class="hidden sm:flex justify-between items-center">
-            <!-- Left Section -->
-            <div class="flex items-center space-x-6">
-              <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h1 class="text-2xl font-bold text-gray-900">待審核資料集管理</h1>
-                  <p class="text-sm text-gray-500">管理與審核AI訓練資料集</p>
-                </div>
-              </div>
-              
-              <!-- Auto Update Indicator -->
-              <div v-if="isPolling" class="flex items-center space-x-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
-                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                <span class="text-xs font-medium text-blue-700">自動更新中</span>
-              </div>
-            </div>
-            
-            <!-- Right Section -->
-            <div class="flex items-center space-x-4">
-              <!-- Action Buttons -->
-              <div class="flex items-center space-x-2">
-                <button 
-                  @click="fetchDatasets" 
-                  class="btn btn-primary btn-sm"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                  </svg>
-                  <span>刷新</span>
-                </button>
-                
-                <button 
-                  @click="openModal()" 
-                  class="btn btn-success btn-sm"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                  </svg>
-                  <span>新增資料</span>
-                </button>
-                
-                <button 
-                  @click="openBatchModal()" 
-                  class="btn btn-secondary btn-sm"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <span>批量新增</span>
-                </button>
-                
-                <button 
-                  @click="openGenerateModal()" 
-                  class="btn btn-info btn-sm"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
-                  <span>從法規生成</span>
-                </button>
-              </div>
-              
-              <!-- Display Mode Toggle -->
-              <div class="flex items-center space-x-3">
-                <div class="flex items-center space-x-2">
-                  <span class="text-sm font-medium text-gray-700">顯示模式</span>
-                  <div class="relative flex bg-gray-200 rounded-lg p-1">
-                    <!-- Sliding Background -->
-                    <div 
-                      class="absolute top-1 bottom-1 w-8 bg-white rounded-md shadow-sm transition-all duration-300 ease-in-out"
-                      :class="displayMode === 'card' ? 'left-1' : 'left-9'"
-                    ></div>
-                    
-                    <button 
-                      @click="displayMode = 'card'"
-                      class="relative z-10 w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
-                      :class="displayMode === 'card' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
-                      title="卡片式顯示"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                      </svg>
-                    </button>
-                    
-                    <button 
-                      @click="displayMode = 'list'"
-                      class="relative z-10 w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 ease-in-out"
-                      :class="displayMode === 'list' ? 'text-gray-800' : 'text-gray-500 hover:text-gray-700'"
-                      title="列表式顯示"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                
-                <!-- Batch Actions -->
-                <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
-                  <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                    已選擇 {{ selectedItems.length }} 項
-                  </span>
-                  <button 
-                    @click="handleBatchDelete"
-                    class="btn btn-danger btn-sm"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                    <span>批量刪除</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        </div>
+        
+        <!-- Batch Actions -->
+        <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
+          <span class="text-xs sm:text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+            <span class="sm:hidden">{{ selectedItems.length }} 項</span>
+            <span class="hidden sm:inline">已選擇 {{ selectedItems.length }} 項</span>
+          </span>
+          <button 
+            @click="handleBatchDelete"
+            class="btn btn-danger btn-sm"
+          >
+            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span class="hidden sm:inline">批量刪除</span>
+            <span class="sm:hidden">刪除</span>
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <div class="container mx-auto px-4 sm:px-0 lg:px-0 py-4 sm:py-8">
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-12 sm:py-16">
         <div class="relative">
@@ -1664,7 +1532,9 @@ const confirmGeneratedData = async () => {
   }
 }
 
-onMounted(fetchDatasets)
+onMounted(() => {
+  fetchDatasets()
+})
 
 // 組件卸載時清理輪詢
 onUnmounted(() => {
