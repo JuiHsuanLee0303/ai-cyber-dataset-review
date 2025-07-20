@@ -50,7 +50,7 @@
         </svg>
       </div>
       <h2 class="text-3xl font-bold text-neutral-900 mb-3">審核完成！</h2>
-      <p class="text-sm sm:text-lg text-neutral-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
+      <p class="text-sm sm:text-base text-neutral-600 mb-8 max-w-md mx-auto">目前沒有更多待審核的資料。感謝您的辛勤工作！</p>
       <button @click="fetchDatasets" class="inline-flex items-center px-6 py-3 bg-primary-main text-white font-medium rounded-xl hover:bg-primary-dark transition-all duration-200 shadow-sm hover:shadow-md">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -123,7 +123,7 @@
             <div class="bg-gradient-to-r from-purple-100 to-pink-50 px-6 py-4 border-b border-neutral-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                  <div class="w-10 h-10 bg-primary-light rounded-xl flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center">
                     <svg class="w-5 h-5 text-primary-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
@@ -275,27 +275,6 @@
                       {{ sourceErrors[index] }}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-neutral-50 to-neutral-100 px-6 py-4 border-b border-neutral-200">
-              <h3 class="text-lg font-semibold text-neutral-900">資料狀態</h3>
-            </div>
-            <div class="p-6">
-              <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 bg-neutral-50 rounded-xl">
-                  <span class="text-sm text-neutral-600">資料ID</span>
-                  <span class="text-sm font-bold text-neutral-900">#{{ currentItem.id }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl">
-                  <span class="text-sm text-neutral-600">通過次數</span>
-                  <span class="text-sm font-bold text-green-600">{{ currentItem.accept_count }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                  <span class="text-sm text-neutral-600">拒絕次數</span>
-                  <span class="text-sm font-bold text-red-600">{{ currentItem.reject_count }}</span>
                 </div>
               </div>
             </div>
