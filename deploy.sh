@@ -18,6 +18,13 @@ EOF
 
 echo "✅ 前端環境變數已設置"
 
+# 設置後端環境變數
+export CORS_ORIGINS="$NGROK_URL,https://ai-cyber-dataset-review.vercel.app"
+export ENVIRONMENT="development"
+
+echo "🔧 設置後端 CORS 配置..."
+echo "CORS_ORIGINS: $CORS_ORIGINS"
+
 # 重新建構並啟動服務
 echo "🔧 重新建構 Docker 映像..."
 docker-compose down
@@ -34,5 +41,10 @@ echo "📊 檢查服務狀態..."
 docker-compose ps
 
 echo "✅ 部署完成！"
-echo "�� 前端地址: $NGROK_URL"
-echo "�� API 地址: $NGROK_URL" 
+echo "🌐 前端地址: https://ai-cyber-dataset-review.vercel.app"
+echo "🔗 API 地址: $NGROK_URL"
+echo ""
+echo "📋 重要提醒："
+echo "1. 確保 Vercel 專案已設置環境變數 VITE_API_URL=$NGROK_URL"
+echo "2. 如果 ngrok URL 變更，請重新設置環境變數並重新部署"
+echo "3. 檢查瀏覽器控制台是否有 CORS 錯誤" 

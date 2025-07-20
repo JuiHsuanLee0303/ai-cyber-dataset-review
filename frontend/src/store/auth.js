@@ -5,9 +5,17 @@ import axios from 'axios'
 const getApiUrl = () => {
   // 如果設置了環境變數，使用環境變數
   if (import.meta.env.VITE_API_URL) {
+    console.log('使用環境變數中的 API URL:', import.meta.env.VITE_API_URL)
     return import.meta.env.VITE_API_URL
   }
 
+  // 檢查是否在生產環境（Vercel）
+  if (window.location.hostname === 'ai-cyber-dataset-review.vercel.app') {
+    console.log('檢測到 Vercel 環境，需要設置 VITE_API_URL 環境變數')
+    return 'http://localhost:8000' // 預設值，但會導致錯誤
+  }
+
+  console.log('使用預設 API URL: http://localhost:8000')
   return 'http://localhost:8000'
 }
 

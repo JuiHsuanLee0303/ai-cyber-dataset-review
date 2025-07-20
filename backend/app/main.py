@@ -32,16 +32,21 @@ def get_cors_origins():
     if cors_origins:
         origins.extend(cors_origins.split(","))
     
-    # 允許所有 ngrok 域名
-    origins.extend([
-        "https://*.ngrok-free.app",
-        "https://*.ngrok.io",
-        "https://*.ngrok.app"
-    ])
+    # 添加 ngrok 域名支援
+    ngrok_url = os.getenv("NGROK_URL", "")
+    if ngrok_url:
+        origins.append(ngrok_url)
+        # 也添加 http 版本
+        if ngrok_url.startswith("https://"):
+            origins.append(ngrok_url.replace("https://", "http://"))
     
     # 開發環境允許所有來源
     if os.getenv("ENVIRONMENT", "development") == "development":
         origins.extend(["http://*", "https://*"])
+    
+    # 添加所有 ngrok-free.app 域名（用於動態域名）
+    origins.append("https://*.ngrok-free.app")
+    origins.append("http://*.ngrok-free.app")
     
     return origins
 
