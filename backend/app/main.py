@@ -32,6 +32,13 @@ def get_cors_origins():
     if cors_origins:
         origins.extend(cors_origins.split(","))
     
+    # 允許所有 ngrok 域名
+    origins.extend([
+        "https://*.ngrok-free.app",
+        "https://*.ngrok.io",
+        "https://*.ngrok.app"
+    ])
+    
     # 開發環境允許所有來源
     if os.getenv("ENVIRONMENT", "development") == "development":
         origins.extend(["http://*", "https://*"])
