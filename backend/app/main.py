@@ -47,6 +47,7 @@ def get_cors_origins():
     # 添加所有 ngrok-free.app 域名（用於動態域名）
     origins.append("https://*.ngrok-free.app")
     origins.append("http://*.ngrok-free.app")
+    origins.append("https://initially-daring-foxhound.ngrok-free.app")
     
     return origins
 
