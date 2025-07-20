@@ -41,8 +41,17 @@ instance.interceptors.request.use(
   (config) => {
     // 添加請求日誌
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`)
+    console.log('Request Headers:', config.headers)
+    console.log('Request Data:', config.data)
+    
     // 添加 ngrok-skip-browser-warning header
     config.headers['ngrok-skip-browser-warning'] = '69420'
+    
+    // 確保 CORS 相關標頭
+    if (!config.headers['Content-Type'] && config.method !== 'GET') {
+      config.headers['Content-Type'] = 'application/json'
+    }
+    
     return config
   },
   (error) => {
@@ -172,7 +181,11 @@ const login = async (username, password) => {
     params.append('username', username)
     params.append('password', password)
 
-    const response = await instance.post('/api/v1/auth/token', params)
+    const response = await instance.post('/api/v1/auth/token', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      }
+    })
     
     const { access_token, refresh_token } = response.data;
     state.accessToken = access_token;
