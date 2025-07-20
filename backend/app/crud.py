@@ -142,22 +142,22 @@ def delete_all_final_datasets(db: Session):
 # --- ReviewLog CRUD ---
 
 def create_review_log(db: Session, dataset_id: int, reviewer_id: int, review: schemas.ReviewCreate):
-    # Get the dataset to extract model_name
     dataset = get_raw_dataset(db, dataset_id)
     model_name = dataset.model_name if dataset else None
     
-    # Create the review log entry
     db_review_log = models.ReviewLog(
         dataset_id=dataset_id,
         reviewer_id=reviewer_id,
         result=review.result.upper(),
         comment=review.comment,
-        common_reasons=review.common_reasons or [],  # 新增
-        detailed_reason=review.detailed_reason,  # 新增
-        model_name=model_name  # 新增：保存模型名稱
+        model_name=model_name
     )
+
+    if review.result.upper() == 'REJECT' and review.rejection_reason_ids:
+        reasons = db.query(models.RejectionReason).filter(models.RejectionReason.id.in_(review.rejection_reason_ids)).all()
+        db_review_log.rejection_reasons.extend(reasons)
+
     db.add(db_review_log)
-    
     db.commit()
     db.refresh(db_review_log)
     return db_review_log
@@ -165,20 +165,21 @@ def create_review_log(db: Session, dataset_id: int, reviewer_id: int, review: sc
 def get_rejection_reasons_for_dataset(db: Session, dataset_id: int):
     rejection_logs = (
         db.query(models.ReviewLog)
-        .options(joinedload(models.ReviewLog.reviewer))
+        .options(
+            joinedload(models.ReviewLog.reviewer),
+            joinedload(models.ReviewLog.rejection_reasons) # Eager load reasons
+        )
         .filter(models.ReviewLog.dataset_id == dataset_id)
         .filter(models.ReviewLog.result == "REJECT")
         .all()
     )
 
-    # Map to schema, including reviewer's username
     results = []
     for log in rejection_logs:
         results.append(schemas.RejectionInfo(
             id=log.id,
             comment=log.comment,
-            common_reasons=log.common_reasons,  # 新增
-            detailed_reason=log.detailed_reason,  # 新增
+            rejection_reasons=log.rejection_reasons, # Directly use the loaded objects
             timestamp=log.timestamp,
             reviewer_username=log.reviewer.username
         ))

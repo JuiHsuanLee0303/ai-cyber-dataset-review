@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -9,6 +10,16 @@ from app.database import models
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+def authenticate_user(db: Session, username: str, password: str) -> Optional[models.User]:
+    """
+    Authenticates a user by checking username and password.
+    Returns the user object on success, otherwise None.
+    """
+    user = crud.get_user_by_username(db, username=username)
+    if not user or not security.verify_password(password, user.password_hash):
+        return None
+    return user
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -40,8 +51,8 @@ def get_current_admin_user(current_user: models.User = Depends(get_current_user)
 
 @router.post("/token", response_model=schemas.Token)
 def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
-    user = crud.get_user_by_username(db, username=form_data.username)
-    if not user or not security.verify_password(form_data.password, user.password_hash):
+    user = authenticate_user(db, username=form_data.username, password=form_data.password)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -49,7 +60,7 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         )
     
     access_token = security.create_access_token(
-        data={"sub": user.username, "role": user.role}
+        data={"sub": user.username, "role": user.role.value}
     )
     refresh_token = security.create_refresh_token(
         data={"sub": user.username}
@@ -90,7 +101,7 @@ def refresh_access_token(
         )
 
     new_access_token = security.create_access_token(
-        data={"sub": user.username, "role": user.role}
+        data={"sub": user.username, "role": user.role.value}
     )
     
     return {

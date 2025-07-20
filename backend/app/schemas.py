@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Any, Dict
 from datetime import datetime
+import re
 
 # --- User Schemas ---
 class UserBase(BaseModel):
@@ -10,9 +11,31 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+    @field_validator('password')
+    def password_complexity(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Za-z]', v):
+            raise ValueError('Password must contain at least one letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one number')
+        return v
+
 class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[str] = None
+
+    @field_validator('password')
+    def password_complexity_optional(cls, v):
+        if v is None:
+            return v
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Za-z]', v):
+            raise ValueError('Password must contain at least one letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 class User(UserBase):
     id: int
@@ -82,23 +105,27 @@ class FinalDataset(FinalDatasetBase):
 # --- Review Schemas ---
 class ReviewCreate(BaseModel):
     result: str # "ACCEPT" or "REJECT"
-    comment: Optional[str] = None
-    common_reasons: Optional[List[str]] = None  # 新增：常見拒絕理由列表
-    detailed_reason: Optional[str] = None  # 新增：詳細拒絕理由
+    comment: Optional[str] = None # For custom, detailed text
+    rejection_reason_ids: Optional[List[int]] = [] # List of IDs for common reasons
 
-# --- Common Rejection Reasons Schema ---
-class CommonRejectionReason(BaseModel):
-    id: str
+# --- Rejection Reason Schemas ---
+class RejectionReasonBase(BaseModel):
     label: str
-    description: str
+    description: Optional[str] = None
     category: str
+
+class RejectionReasonCreate(RejectionReasonBase):
+    pass
+
+class RejectionReason(RejectionReasonBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
 
 # --- ReviewLog Schema for Rejection Info ---
 class RejectionInfo(BaseModel):
     id: int
     comment: Optional[str] = None
-    common_reasons: Optional[List[str]] = None  # 新增
-    detailed_reason: Optional[str] = None  # 新增
+    rejection_reasons: List[RejectionReason] = [] # Use the new schema
     timestamp: datetime
     reviewer_username: str
     model_config = ConfigDict(from_attributes=True)
