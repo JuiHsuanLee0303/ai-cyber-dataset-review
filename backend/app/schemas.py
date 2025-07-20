@@ -13,8 +13,8 @@ class UserCreate(UserBase):
 
     @field_validator('password')
     def password_complexity(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        if len(v) < 5:
+            raise ValueError('Password must be at least 5 characters long')
         if not re.search(r'[A-Za-z]', v):
             raise ValueError('Password must contain at least one letter')
         if not re.search(r'\d', v):
