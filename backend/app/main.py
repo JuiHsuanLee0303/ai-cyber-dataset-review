@@ -15,6 +15,7 @@ from app import crud, schemas
 from app.database.models import UserRole
 
 import os
+import uvicorn
 
 # CORS Middleware
 def get_cors_origins():
@@ -129,3 +130,22 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+
+if __name__ == "__main__":
+    # 檢查是否有 SSL 證書
+    ssl_keyfile = os.getenv("SSL_KEY_FILE", "ssl/private.key")
+    ssl_certfile = os.getenv("SSL_CERT_FILE", "ssl/certificate.crt")
+    
+    if os.path.exists(ssl_keyfile) and os.path.exists(ssl_certfile):
+        # 使用 HTTPS
+        uvicorn.run(
+            "app.main:app",
+            host="0.0.0.0",
+            port=8000,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            reload=True
+        )
+    else:
+        # 使用 HTTP
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
