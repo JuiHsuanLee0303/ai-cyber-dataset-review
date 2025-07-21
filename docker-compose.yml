@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8443:8000"   # 只映射 HTTPS 端口
+      - "8000:8000"
     volumes:
       - ./backend:/app
       - ./data:/app/data
@@ -10,14 +10,24 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./data/test.db
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - CORS_ORIGINS=https://initially-daring-foxhound.ngrok-free.app,https://*.ngrok-free.app
+      - CORS_ORIGINS=https://*.ngrok-free.app
       - ENVIRONMENT=development
-    depends_on:
-      - ollama
     networks:
       - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    ports:
+      - "4040:4040"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN} # 從環境變數讀取您的 ngrok token
+    command: http https://backend:8000 --domain your-custom-domain.ngrok-free.app # 將 your-custom-domain.ngrok-free.app 換成您自己的
+    depends_on:
+      - backend
+    networks:
+      - app-network
 
   frontend:
     build:
