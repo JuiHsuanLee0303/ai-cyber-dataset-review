@@ -59,7 +59,7 @@
           <span><span class="sm:hidden">法規</span><span class="hidden sm:inline">從法規</span>生成</span>
         </button>
       </div>
-      
+
       <!-- Display Mode Toggle and Batch Actions -->
       <div class="flex items-center justify-between sm:justify-end sm:space-x-4">
         <!-- Display Mode Toggle -->
@@ -120,6 +120,82 @@
 
     <!-- Main Content -->
     <div class="container mx-auto px-4 sm:px-0 lg:px-0 py-4 sm:py-8">
+      <!-- Filter Section -->
+      <div v-if="filteredDatasets.length > 0" class="pr-0 sm:pr-4 pb-6 w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <!-- Filter Controls -->
+          <div class="w-full sm:w-auto">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <!-- Search Input -->
+              <div class="flex-1 sm:flex-none sm:w-64 w-full sm:w-auto">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+                <input
+                  v-model="filters.search"
+                  type="text"
+                  placeholder="搜尋指令、輸出或模型..."
+                  class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  @input="applyFilters"
+                />
+              </div>
+              
+              <!-- Status Filter -->
+              <div class="flex-1 sm:flex-none sm:w-40 w-full sm:w-auto">
+                <select
+                  v-model="filters.status"
+                  @change="applyFilters"
+                  class="block w-full sm:w-40 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">所有狀態</option>
+                  <option value="pending">待審核</option>
+                  <option value="reviewing">審核中</option>
+                  <option value="done">已完成</option>
+                  <option value="regenerating">重新生成中</option>
+                </select>
+              </div>
+              
+              <!-- Model Filter -->
+              <div class="flex-1 sm:flex-none sm:w-40 w-full sm:w-auto">
+                <select
+                  v-model="filters.model"
+                  @change="applyFilters"
+                  class="block w-full sm:w-40 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">所有模型</option>
+                  <option v-for="model in availableModels" :key="model" :value="model">{{ model }}</option>
+                </select>
+              </div>
+              
+              <!-- Clear Filters Button -->
+              <button
+                v-if="hasActiveFilters"
+                @click="clearFilters"
+                class="btn btn-secondary btn-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span class="hidden sm:inline">清除篩選</span>
+                <span class="sm:hidden">清除</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Results Count -->
+          <div class="text-sm text-gray-600 flex justify-center w-full sm:w-auto">
+            <span v-if="filteredDatasets.length === datasets.length">
+              共 {{ datasets.length }} 筆資料
+            </span>
+            <span v-else>
+              顯示 {{ filteredDatasets.length }} / {{ datasets.length }} 筆資料
+            </span>
+          </div>
+        </div>
+      </div>
+      
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-12 sm:py-16">
         <div class="relative">
@@ -133,20 +209,32 @@
       </div>
       
       <!-- Empty State -->
-      <div v-else-if="datasets.length === 0" class="flex flex-col items-center justify-center py-12 sm:py-16">
+      <div v-else-if="filteredDatasets.length === 0" class="flex flex-col items-center justify-center py-12 sm:py-16">
         <div class="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
           <svg class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
         </div>
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">沒有待審核資料</h3>
-        <p class="text-gray-500 text-center max-w-md mb-4 sm:mb-6 text-sm sm:text-base">目前沒有需要審核的資料集。您可以點擊「新增資料」按鈕開始新增資料。</p>
-        <button @click="openModal()" class="btn btn-primary px-4 py-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          <span>新增第一筆資料</span>
-        </button>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+          {{ hasActiveFilters ? '沒有符合篩選條件的資料' : '沒有待審核資料' }}
+        </h3>
+        <p class="text-gray-500 text-center max-w-md mb-4 sm:mb-6 text-sm sm:text-base">
+          {{ hasActiveFilters ? '請嘗試調整篩選條件或清除篩選來查看所有資料。' : '目前沒有需要審核的資料集。您可以點擊「新增資料」按鈕開始新增資料。' }}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button v-if="hasActiveFilters" @click="clearFilters" class="btn btn-secondary px-4 py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span>清除篩選</span>
+          </button>
+          <button @click="openModal()" class="btn btn-primary px-4 py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>{{ hasActiveFilters ? '新增資料' : '新增第一筆資料' }}</span>
+          </button>
+        </div>
       </div>
       
       <!-- Data Content -->
@@ -165,7 +253,7 @@
               class="contents"
             >
               <div 
-                v-for="(item, index) in datasets" 
+                v-for="(item, index) in filteredDatasets" 
                 :key="item.id" 
                 class="card"
                 :class="{ 'ring-2 ring-blue-500': selectedItems.includes(item.id) }"
@@ -264,6 +352,17 @@
                       <p class="text-xs sm:text-sm text-gray-800 line-clamp-2">{{ item.input }}</p>
                     </div>
                   </div>
+                  
+                  <!-- Model Name (if exists) -->
+                  <div v-if="item.model_name">
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-indigo-500 rounded-full mr-2"></span>
+                      模型 (Model)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-2 sm:p-3">
+                      <p class="text-xs sm:text-sm text-gray-800">{{ item.model_name }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -303,8 +402,8 @@
                     <input 
                       type="checkbox" 
                       @change="toggleSelectAll"
-                      :checked="selectedItems.length === datasets.length && datasets.length > 0"
-                      :indeterminate="selectedItems.length > 0 && selectedItems.length < datasets.length"
+                                      :checked="selectedItems.length === filteredDatasets.length && filteredDatasets.length > 0"
+                :indeterminate="selectedItems.length > 0 && selectedItems.length < filteredDatasets.length"
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
@@ -313,12 +412,13 @@
                   <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">指令</th>
                   <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸入</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸出</th>
+                  <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">統計</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="item in datasets" :key="item.id" class="hover:bg-gray-50 transition-colors duration-150">
+                <tr v-for="item in filteredDatasets" :key="item.id" class="hover:bg-gray-50 transition-colors duration-150">
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <input 
                       type="checkbox" 
@@ -343,6 +443,9 @@
                   </td>
                   <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm text-gray-900 max-w-xs">
                     <div class="truncate" :title="item.output">{{ item.output }}</div>
+                  </td>
+                  <td class="hidden md:table-cell px-6 py-4 text-xs sm:text-sm text-gray-900">
+                    <div class="truncate" :title="item.model_name">{{ item.model_name || '-' }}</div>
                   </td>
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                     <div class="space-y-1">
@@ -393,64 +496,198 @@
 
     <!-- Add/Edit Modal -->
     <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="text-xl font-bold text-gray-900">{{ editingItem ? '編輯資料' : '新增資料' }}</h3>
-          <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+      <div class="modal-content max-w-4xl max-h-[90vh] flex flex-col">
+        <div class="modal-header bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 flex-shrink-0">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-900">{{ editingItem ? '編輯資料' : '新增資料' }}</h3>
+              <p class="text-sm text-gray-600">{{ editingItem ? '修改現有資料集內容' : '建立新的指令微調資料集' }}</p>
+            </div>
+          </div>
+          <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
         
-        <div class="modal-body">
-          <form @submit.prevent="handleSubmit" class="space-y-6">
-            <div class="form-group">
-              <label class="form-label">系統提示 (System)</label>
-              <textarea v-model="form.system" rows="2" class="form-textarea" placeholder="輸入系統提示內容..."></textarea>
+        <div class="modal-body overflow-y-auto">
+          <form @submit.prevent="handleSubmit" class="space-y-8">
+            <!-- 主要內容區域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- 左側：核心欄位 -->
+              <div class="space-y-6">
+                <!-- 指令欄位 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    指令 (Instruction) <span class="text-red-500 ml-1">*</span>
+                  </label>
+                  <textarea 
+                    v-model="form.instruction" 
+                    rows="4" 
+                    class="form-textarea focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    required 
+                    placeholder="請輸入明確的指令，例如：請解釋這個資安法規的適用範圍..."
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">這是AI需要執行的主要任務</p>
+                </div>
+                
+                <!-- 輸出欄位 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    輸出 (Output) <span class="text-red-500 ml-1">*</span>
+                  </label>
+                  <textarea 
+                    v-model="form.output" 
+                    rows="6" 
+                    class="form-textarea focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+                    required 
+                    placeholder="請輸入期望的輸出結果..."
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">這是AI應該產生的理想回答</p>
+                </div>
+                
+                <!-- 輸入內容 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    輸入內容 (Input)
+                  </label>
+                  <textarea 
+                    v-model="form.input" 
+                    rows="3" 
+                    class="form-textarea focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" 
+                    placeholder="可選的輸入內容或上下文..."
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">提供額外的上下文或輸入資訊</p>
+                </div>
+              </div>
+              
+              <!-- 右側：輔助欄位 -->
+              <div class="space-y-6">
+                <!-- 系統提示 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    系統提示 (System)
+                  </label>
+                  <textarea 
+                    v-model="form.system" 
+                    rows="3" 
+                    class="form-textarea focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
+                    placeholder="設定AI的角色或行為模式..."
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">定義AI應該扮演的角色或行為</p>
+                </div>
+                
+                <!-- 模型名稱 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                    模型名稱 (Model Name)
+                  </label>
+                  <input 
+                    v-model="form.model_name" 
+                    type="text" 
+                    class="form-input focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                    placeholder="例如：llama3, qwen2.5, gemma2" 
+                  />
+                  <p class="text-xs text-gray-500 mt-1">記錄生成此資料所使用的AI模型名稱</p>
+                </div>
+                
+                <!-- 資料來源 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    資料來源 (Source)
+                  </label>
+                  <textarea 
+                    v-model="form.source" 
+                    rows="3" 
+                    class="form-textarea focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder="每行一個資料來源&#10;例如：資通安全管理法第15條&#10;資安事件通報及應變辦法"
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">列出資料的來源法規或文件</p>
+                </div>
+                
+                <!-- 歷史紀錄 -->
+                <div class="form-group">
+                  <label class="form-label flex items-center">
+                    <svg class="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    歷史紀錄 (History)
+                  </label>
+                  <textarea 
+                    v-model="form.history" 
+                    rows="3" 
+                    class="form-textarea focus:ring-2 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm" 
+                    placeholder='[{"role": "user", "content": "..."}]'
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">JSON格式的對話歷史紀錄</p>
+                </div>
+              </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">指令 (Instruction) <span class="text-red-500">*</span></label>
-              <textarea v-model="form.instruction" rows="3" class="form-textarea" required placeholder="輸入指令內容..."></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">輸入內容 (Input)</label>
-              <textarea v-model="form.input" rows="3" class="form-textarea" placeholder="輸入內容..."></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">歷史紀錄 (History - JSON format)</label>
-              <textarea v-model="form.history" rows="3" class="form-textarea" placeholder='[{"role": "user", "content": "..."}]'></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">輸出 (Output) <span class="text-red-500">*</span></label>
-              <textarea v-model="form.output" rows="5" class="form-textarea" required placeholder="輸入輸出內容..."></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">資料來源 (Source) - 每行一個</label>
-              <textarea v-model="form.source" rows="2" class="form-textarea" placeholder="資料來源1&#10;資料來源2"></textarea>
-            </div>
-            
-            <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-red-700 text-sm">{{ error }}</p>
+            <!-- 錯誤訊息 -->
+            <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <p class="text-red-700 text-sm font-medium">{{ error }}</p>
+              </div>
             </div>
           </form>
         </div>
         
-        <div class="modal-footer">
-          <button type="button" @click="showModal = false" class="btn btn-secondary px-4 py-2">
-            <span>取消</span>
-          </button>
-          <button type="submit" @click="handleSubmit" class="btn btn-primary px-4 py-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span>{{ editingItem ? '更新' : '新增' }}</span>
-          </button>
+        <div class="modal-footer bg-gray-50 border-t border-gray-200 flex-shrink-0">
+          <div class="flex justify-between items-center w-full">
+            <div class="text-sm text-gray-500">
+              <span class="text-red-500">*</span> 為必填欄位
+            </div>
+            <div class="flex space-x-3">
+              <button 
+                type="button" 
+                @click="showModal = false" 
+                class="btn btn-secondary px-6 py-2.5 hover:bg-gray-600 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                取消
+              </button>
+              <button 
+                type="submit" 
+                @click="handleSubmit" 
+                class="btn btn-primary px-6 py-2.5 hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ editingItem ? '更新資料' : '新增資料' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -569,7 +806,8 @@
     "output": "這是根據《資通安全管理法》第15條與第19條訂定的...",
     "system": "說明本辦法與母法的法律關係。",
     "history": [],
-    "source": ["公務機關所屬人員資通安全事項獎懲辦法第1條"]
+    "source": ["公務機關所屬人員資通安全事項獎懲辦法第1條"],
+    "model_name": "llama3"
   }
 ]'
               ></textarea>
@@ -604,6 +842,7 @@
                   <div><strong>指令:</strong> {{ item.instruction || '無' }}</div>
                   <div><strong>輸入:</strong> {{ item.input || '無' }}</div>
                   <div><strong>輸出:</strong> {{ item.output || '無' }}</div>
+                  <div><strong>模型:</strong> {{ item.model_name || '無' }}</div>
                 </div>
               </div>
             </div>
@@ -799,7 +1038,7 @@
                   :class="[
                     'max-h-96 overflow-y-auto border rounded-lg p-4',
                     generationType === 'batch' && randomSelection
-                      ? 'bg-gray-100 border-gray-300'
+                      ? 'bg-gray-100 border-gray-300 h-64 flex items-center justify-center'
                       : 'bg-gray-50 border-gray-200'
                   ]"
                 >
@@ -861,7 +1100,7 @@
                   :class="[
                     'max-h-96 overflow-y-auto border rounded-lg p-4',
                     generationType === 'batch' && randomSelection
-                      ? 'bg-blue-100 border-blue-300'
+                      ? 'bg-blue-100 border-blue-300 h-64 flex items-center justify-center'
                       : 'bg-blue-50 border-gray-200'
                   ]"
                 >
@@ -908,23 +1147,23 @@
               </div>
             </div>
             
-                         <!-- Generate Button -->
-             <div class="flex justify-center pt-6 border-t border-gray-200">
-               <button 
-                 @click="generateData" 
-                 :disabled="(!selectedModel || generating || (generationType === 'batch' && (!batchSize || batchSize < 1 || batchSize > 20)) || (!randomSelection && selectedRegulations.length === 0))"
-                 class="btn btn-primary px-8 py-3"
-               >
-                 <svg v-if="generating" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                 </svg>
-                 <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                 </svg>
-                 <span>{{ generating ? '生成中...' : (generationType === 'batch' ? `批量生成 ${batchSize} 筆資料` : '生成資料') }}</span>
-               </button>
-             </div>
+            <!-- Generate Button -->
+            <div class="flex justify-center pt-6 border-t border-gray-200">
+              <button 
+                @click="generateData" 
+                :disabled="(!selectedModel || generating || (generationType === 'batch' && (!batchSize || batchSize < 1 || batchSize > 20)) || (!randomSelection && selectedRegulations.length === 0))"
+                class="btn btn-primary px-8 py-3"
+              >
+                <svg v-if="generating" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>{{ generating ? '生成中...' : (generationType === 'batch' ? `批量生成 ${batchSize} 筆資料` : '生成資料') }}</span>
+              </button>
+            </div>
           </div>
           
           <!-- Step 2: Generated Result -->
@@ -1179,7 +1418,8 @@ const getInitialForm = () => ({
   output: '',
   system: '',
   source: '',
-  history: '[]' // Default to empty JSON array string
+  history: '[]', // Default to empty JSON array string
+  model_name: '' // Default to empty model name
 });
 
 // For Add/Edit Modal
@@ -1227,11 +1467,75 @@ const batchSelectedItems = ref({})
 const availableModels = ref([])
 const selectedModel = ref('')
 
+// For Filtering
+const filters = ref({
+  search: '',
+  status: '',
+  model: ''
+})
+
+const filteredDatasets = computed(() => {
+  let result = datasets.value
+
+  // Search filter
+  if (filters.value.search) {
+    const searchTerm = filters.value.search.toLowerCase()
+    result = result.filter(item => 
+      item.instruction?.toLowerCase().includes(searchTerm) ||
+      item.output?.toLowerCase().includes(searchTerm) ||
+      item.model_name?.toLowerCase().includes(searchTerm) ||
+      item.input?.toLowerCase().includes(searchTerm) ||
+      item.system?.toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Status filter
+  if (filters.value.status) {
+    result = result.filter(item => item.review_status === filters.value.status)
+  }
+
+  // Model filter
+  if (filters.value.model) {
+    result = result.filter(item => item.model_name === filters.value.model)
+  }
+
+  return result
+})
+
+const hasActiveFilters = computed(() => {
+  return filters.value.search || filters.value.status || filters.value.model
+})
+
+const applyFilters = () => {
+  // 篩選邏輯已在 computed 中處理
+  // 這裡可以添加額外的邏輯，比如保存篩選條件到 localStorage
+}
+
+const clearFilters = () => {
+  filters.value.search = ''
+  filters.value.status = ''
+  filters.value.model = ''
+}
+
+const getStatusText = (status) => {
+  const statusMap = {
+    'pending': '待審核',
+    'reviewing': '審核中',
+    'done': '已完成',
+    'regenerating': '重新生成中'
+  }
+  return statusMap[status] || status
+}
+
 const fetchDatasets = async () => {
   loading.value = true
   try {
     const response = await instance.get('/api/v1/datasets/')
     datasets.value = response.data
+    
+    // 更新可用的模型列表
+    const models = [...new Set(datasets.value.map(item => item.model_name).filter(Boolean))]
+    availableModels.value = models.sort()
     
     // 檢查是否有正在重新生成的資料
     const hasRegenerating = datasets.value.some(dataset => dataset.review_status === 'regenerating')
@@ -1593,10 +1897,10 @@ const submitBatchData = async () => {
 
 // Batch Operations Functions
 const toggleSelectAll = () => {
-  if (selectedItems.value.length === datasets.value.length) {
+  if (selectedItems.value.length === filteredDatasets.value.length) {
     selectedItems.value = []
   } else {
-    selectedItems.value = datasets.value.map(item => item.id)
+    selectedItems.value = filteredDatasets.value.map(item => item.id)
   }
 }
 
@@ -1631,15 +1935,6 @@ const handleBatchDelete = async () => {
 }
 
 // Status Helper Functions
-const getStatusText = (status) => {
-  const statusMap = {
-    'pending': '待審核',
-    'reviewing': '審核中',
-    'done': '已完成',
-    'regenerating': '重新生成中'
-  }
-  return statusMap[status] || status
-}
 
 const getStatusBadgeClass = (status) => {
   const classMap = {
@@ -2014,11 +2309,16 @@ onUnmounted(() => {
 }
 
 .btn-sm {
-  @apply px-3 py-1.5 text-sm;
+  @apply px-3 py-2 text-sm;
 }
 
 .btn-primary {
-  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm;
+  @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-lg transition-all duration-200;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3);
 }
 
 .btn-success {
@@ -2096,40 +2396,107 @@ input[type="checkbox"]:indeterminate {
 
 /* Modal system */
 .modal-overlay {
-  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
-  @apply bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto;
+  @apply bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh];
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {
-  @apply flex justify-between items-center p-6 border-b border-gray-200;
+  @apply flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0;
 }
 
 .modal-body {
-  @apply p-6;
+  @apply p-6 overflow-y-auto flex-1;
 }
 
 .modal-footer {
-  @apply flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50;
+  @apply flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0;
 }
 
 /* Form system */
 .form-group {
-  @apply space-y-2;
+  @apply space-y-2 relative;
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-semibold text-gray-700 transition-colors duration-200;
 }
 
 .form-input {
-  @apply mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply mt-1 block w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 text-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300;
+  background-color: #ffffff;
 }
 
 .form-textarea {
-  @apply mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply mt-1 block w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 text-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300;
+  background-color: #ffffff;
+  resize: vertical;
+  min-height: 2.5rem;
+  line-height: 1.5;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* 特殊欄位樣式 */
+.form-textarea[placeholder*="JSON"] {
+  @apply font-mono;
+}
+
+/* 必填欄位標記 */
+.form-label .text-red-500 {
+  @apply font-bold;
+}
+
+/* 欄位說明文字 */
+.form-group p.text-xs {
+  @apply mt-1 text-gray-500 italic;
+}
+
+/* 滾動條樣式優化 */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Loading animations */
@@ -2160,6 +2527,16 @@ input[type="checkbox"]:indeterminate {
 }
 
 /* Responsive utilities */
+@media (max-width: 1024px) {
+  .modal-content {
+    @apply max-w-[95vw] mx-4;
+  }
+  
+  .grid-cols-1.lg\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .btn-sm {
     @apply px-2 py-1 text-xs;
@@ -2169,6 +2546,27 @@ input[type="checkbox"]:indeterminate {
   .card-body,
   .card-footer {
     @apply p-3;
+  }
+  
+  .modal-header {
+    @apply p-4;
+  }
+  
+  .modal-body {
+    @apply p-4 overflow-y-auto flex-1;
+  }
+  
+  .modal-footer {
+    @apply p-4 flex-col space-y-3;
+  }
+  
+  .modal-footer > div {
+    @apply flex-col space-y-3;
+  }
+  
+  .form-input,
+  .form-textarea {
+    @apply py-2 px-3;
   }
 }
 </style> 

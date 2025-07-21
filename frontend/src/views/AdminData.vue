@@ -18,9 +18,24 @@
       <p class="mt-2 text-gray-500">載入中...</p>
     </div>
     
-    <div v-else-if="finalDataset.length === 0" class="text-center py-10 bg-white rounded-lg shadow-md">
-      <h3 class="text-3xl font-medium text-gray-900 mb-2">沒有最終資料</h3>
-      <p class="text-gray-500 text-sm">目前沒有已通過審核的最終資料集。</p>
+    <div v-else-if="finalDataset.length === 0" class="flex flex-col items-center justify-center py-12 sm:py-16">
+      <div class="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+        <svg class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">沒有最終資料</h3>
+      <p class="text-gray-500 text-center max-w-md mb-4 sm:mb-6 text-sm sm:text-base">
+        目前沒有已通過審核的最終資料集。請先在待審核資料集中審核並通過一些資料。
+      </p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button @click="router.push('/admin/raw-data')" class="btn btn-primary px-4 py-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <span>前往待審核資料</span>
+        </button>
+      </div>
     </div>
     
     <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -159,8 +174,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import useAuth from '../store/auth'
 import { useToast } from 'vue-toastification'
+
+const router = useRouter()
 
 const { instance } = useAuth()
 const toast = useToast()
@@ -288,5 +306,29 @@ onMounted(fetchFinalDataset)
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Button styles */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white;
+  @apply hover:bg-blue-700;
+  @apply focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply bg-gray-600 text-white;
+  @apply hover:bg-gray-700;
+  @apply focus:ring-gray-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white;
+  @apply hover:bg-red-700;
+  @apply focus:ring-red-500;
 }
 </style> 

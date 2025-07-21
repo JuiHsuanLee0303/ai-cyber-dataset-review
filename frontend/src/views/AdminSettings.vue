@@ -25,7 +25,7 @@
     
     <!-- Main Content -->
     <div v-else>
-      <form @submit.prevent="saveSettings" class="p-6 md:p-8">
+      <form @submit.prevent="saveSettings" class="p-6 md:py-8 md:px-0">
         
         <!-- AI Model Settings Section -->
         <div class="mb-8 pb-8 border-b border-slate-200">
@@ -315,42 +315,44 @@
             </div>
           </div>
           
-          <!-- Rejection Threshold -->
-          <div class="mb-6">
-            <label for="rejection-threshold" class="block text-slate-700 font-semibold mb-3 text-sm md:text-base">
-              拒絕閾值 (Rejection Threshold)
-            </label>
-            <p class="text-slate-500 text-sm md:text-base mb-3">
-              當一筆資料的拒絕數量達到此數值，將自動觸發重生成。
-            </p>
-            <div class="max-w-xs">
-              <input
-                type="number"
-                id="rejection-threshold"
-                v-model.number="form.rejection_threshold"
-                class="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
-                min="1"
-              />
+          <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+            <!-- Rejection Threshold -->
+            <div class="mb-6">
+              <label for="rejection-threshold" class="block text-slate-700 font-semibold mb-3 text-sm md:text-base">
+                拒絕閾值 (Rejection Threshold)
+              </label>
+              <p class="text-slate-500 text-sm md:text-base mb-3">
+                當一筆資料的拒絕數量達到此數值，將自動觸發重生成。
+              </p>
+              <div class="max-w-xs">
+                <input
+                  type="number"
+                  id="rejection-threshold"
+                  v-model.number="form.rejection_threshold"
+                  class="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
+                  min="1"
+                />
+              </div>
             </div>
-          </div>
-          
-          <!-- Approval Threshold -->
-          <div class="mb-6">
-            <label for="approval-threshold" class="block text-slate-700 font-semibold mb-3 text-sm md:text-base">
-              通過閾值 (Approval Threshold)
-            </label>
-            <p class="text-slate-500 text-sm md:text-base mb-3">
-              當一筆資料的通過數量達到此數值，將自動轉入最終資料集。
-            </p>
-            <div class="max-w-xs">
-              <input
-                type="number"
-                id="approval-threshold"
-                v-model.number="form.approval_threshold"
-                class="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
-                min="1"
-              />
-            </div>
+            
+            <!-- Approval Threshold -->
+            <div class="mb-6">
+              <label for="approval-threshold" class="block text-slate-700 font-semibold mb-3 text-sm md:text-base">
+                通過閾值 (Approval Threshold)
+              </label>
+              <p class="text-slate-500 text-sm md:text-base mb-3">
+                當一筆資料的通過數量達到此數值，將自動轉入最終資料集。
+              </p>
+              <div class="max-w-xs">
+                <input
+                  type="number"
+                  id="approval-threshold"
+                  v-model.number="form.approval_threshold"
+                  class="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
+                  min="1"
+                />
+              </div>
+            </div> 
           </div>
         </div>
 
