@@ -61,7 +61,7 @@ def create_app() -> FastAPI:
             if not admin_user:
                 admin_user_in = schemas.UserCreate(
                     username="admin",
-                    password="admin",
+                    password="admin123",
                     role=UserRole.ADMIN
                 )
                 crud.create_user(db=db, user=admin_user_in)
@@ -71,7 +71,7 @@ def create_app() -> FastAPI:
             if not expert_user:
                 expert_user_in = schemas.UserCreate(
                     username="expert",
-                    password="expert",
+                    password="expert123",
                     role=UserRole.EXPERT
                 )
                 crud.create_user(db=db, user=expert_user_in)

@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://initially-daring-foxhound.ngrok-free.app/api/$1"
+      "destination": "http://10.255.255.254:8000/api/$1"
     },
     {
       "source": "/(.*)",
