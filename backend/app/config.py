@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+import os
 
 class Settings(BaseSettings):
     rejection_threshold: int = 3
@@ -13,11 +14,16 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    # HTTPS settings
+    use_https: bool = os.getenv("USE_HTTPS", "false").lower() == "true"
+    ssl_cert_file: str = os.getenv("SSL_CERT_FILE", "ssl/certificate.crt")
+    ssl_key_file: str = os.getenv("SSL_KEY_FILE", "ssl/private.key")
+    https_port: int = int(os.getenv("HTTPS_PORT", "8000"))
 
     class Config:
         # If you were loading from a .env file, you would specify it here
         env_file = ".env"
         env_file_encoding = 'utf-8'
 
-# Create a single, reusable instance of the settings
+# 創建全局設置實例
 settings = Settings() 

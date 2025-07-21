@@ -58,8 +58,26 @@ docker-compose up -d
 ### 🌐 系統介面
 
 * 前端應用：[http://localhost:5173](http://localhost:5173)
-* 後端 API：[http://localhost:8000](http://localhost:8000)
+* 後端 API：[http://localhost:8000](http://localhost:8000) / [https://localhost:8443](https://localhost:8443) (HTTPS)
 * Ollama 模型：[http://localhost:11434](http://localhost:11434)
+
+### 🔒 HTTPS 支援
+
+系統支援 HTTPS 連接，確保資料傳輸安全：
+
+```bash
+# 生成 SSL 證書
+./generate-ssl-certs.sh
+
+# 啟動 HTTPS 服務
+./start-https.sh
+
+# 或本地開發
+cd backend
+./start-server.sh true 8000
+```
+
+📄 詳見：[HTTPS_SETUP.md](HTTPS_SETUP.md)
 
 ---
 

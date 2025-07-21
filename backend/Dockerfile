@@ -15,4 +15,5 @@ COPY . .
 
 # Command to run the application
 # Run uvicorn from the project root, pointing to the app object in app/main.py
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+# Use HTTPS if SSL certificates are available
+CMD ["sh", "-c", "if [ -f /app/ssl/certificate.crt ] && [ -f /app/ssl/private.key ]; then uvicorn app.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile /app/ssl/private.key --ssl-certfile /app/ssl/certificate.crt --reload; else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; fi"] 

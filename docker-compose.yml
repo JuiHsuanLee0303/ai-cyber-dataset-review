@@ -3,9 +3,11 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+      - "8443:8000"  # HTTPS port
     volumes:
       - ./backend:/app
       - ./data:/app/data
+      - ./ssl:/app/ssl  # Mount SSL certificates
     environment:
       - DATABASE_URL=sqlite:///./data/test.db
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
