@@ -889,8 +889,8 @@
 
     <!-- Generate from Regulations Modal -->
     <div v-if="showGenerateModal" class="modal-overlay">
-      <div class="modal-content max-w-6xl">
-        <div class="modal-header">
+      <div class="modal-content max-w-6xl max-h-[90vh] flex flex-col">
+        <div class="modal-header bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 flex-shrink-0">
           <h3 class="text-xl font-bold text-gray-900">從法規生成資料</h3>
           <button @click="closeGenerateModal" class="text-gray-400 hover:text-gray-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -899,7 +899,7 @@
           </button>
         </div>
         
-        <div class="modal-body">
+        <div class="modal-body overflow-y-auto flex-1">
           <!-- Step 1: Select Regulations -->
           <div v-if="generateStep === 1" class="space-y-6">
             <div class="flex items-center space-x-2 mb-4">
@@ -1388,6 +1388,22 @@
                   <span>取消</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer bg-gray-50 border-t border-gray-200 flex-shrink-0">
+          <div class="flex justify-between items-center w-full">
+            <div class="text-sm text-gray-500">
+              按 ESC 鍵可關閉此視窗
+            </div>
+            <div class="flex space-x-3">
+              <button @click="closeGenerateModal" class="btn btn-secondary px-4 py-2">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                關閉
+              </button>
             </div>
           </div>
         </div>
@@ -1993,6 +2009,13 @@ const closeGenerateModal = () => {
   confirming.value = false
 }
 
+// Handle ESC key to close modal
+const handleKeydown = (event) => {
+  if (showGenerateModal.value && event.key === 'Escape') {
+    closeGenerateModal()
+  }
+}
+
 const toggleRegulationSelection = (id) => {
   const index = selectedRegulations.value.indexOf(id)
   if (index > -1) {
@@ -2266,11 +2289,13 @@ const confirmGeneratedData = async () => {
 
 onMounted(() => {
   fetchDatasets()
+  document.addEventListener('keydown', handleKeydown)
 })
 
 // 組件卸載時清理輪詢
 onUnmounted(() => {
   stopPolling()
+  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
