@@ -75,6 +75,114 @@ async def generate_dataset_from_regulations(
         print(f"Error generating dataset: {e}")
         raise HTTPException(status_code=500, detail=f"生成資料失敗: {str(e)}")
 
+@router.post("/batch-generate-from-regulations", response_model=schemas.BatchGeneratedDataset)
+async def batch_generate_datasets_from_regulations(
+    request: schemas.BatchGenerateFromRegulationsRequest,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Generate multiple datasets from selected legal regulations using Ollama.
+    Supports random selection of regulations for each generation.
+    Only accessible by admin users.
+    """
+    try:
+        # Get Ollama configuration
+        url_setting = crud.get_setting(db, "ollama_url")
+        ollama_url = url_setting.value if url_setting else "http://ollama:11434"
+
+        # 使用指定的模型或從設定中獲取第一個可用模型
+        if request.model_name:
+            model_name = request.model_name
+        else:
+            # 從多模型設定中獲取第一個模型
+            models_setting = crud.get_setting(db, "ollama_models")
+            if models_setting and models_setting.value and len(models_setting.value) > 0:
+                model_name = models_setting.value[0]  # 使用第一個模型作為預設
+            else:
+                model_name = "llama3"  # 預設模型
+
+        # Create Ollama client
+        ollama_client = OllamaClient(host=ollama_url, model=model_name)
+        
+        # Get all available legal articles
+        all_articles = []
+        
+        # 如果啟用隨機選擇且沒有選擇法規，使用所有可用的法規
+        if request.random_selection and not request.selected_article_ids:
+            all_available_articles = db.query(models.LegalArticle).all()
+            for article in all_available_articles:
+                all_articles.append({
+                    'id': article.id,
+                    'title': article.title,
+                    'number': article.number,
+                    'content': article.content
+                })
+        else:
+            # 使用選擇的法規
+            for article_id in request.selected_article_ids:
+                article = db.query(models.LegalArticle).filter(models.LegalArticle.id == article_id).first()
+                if article:
+                    all_articles.append({
+                        'id': article.id,
+                        'title': article.title,
+                        'number': article.number,
+                        'content': article.content
+                    })
+        
+        if not all_articles:
+            raise HTTPException(status_code=400, detail="請選擇至少一個法規條文")
+        
+        generated_datasets = []
+        success_count = 0
+        failed_count = 0
+        
+        # Generate multiple datasets
+        for i in range(request.batch_size):
+            try:
+                # Randomly select regulations if enabled
+                if request.random_selection and len(all_articles) > 1:
+                    # Randomly select 1-3 articles for each generation
+                    import random
+                    num_articles = random.randint(1, min(3, len(all_articles)))
+                    selected_articles = random.sample(all_articles, num_articles)
+                else:
+                    # Use all selected articles
+                    selected_articles = all_articles
+                
+                # Prepare article contents
+                article_contents = []
+                article_titles = []
+                for article in selected_articles:
+                    article_titles.append(f"{article['title']}第{article['number']}條")
+                    article_contents.append(f"{article['title']}第{article['number']}條：{article['content']}")
+                
+                # Generate structured dataset
+                generated_data = await ollama_client.generate_from_regulations(article_contents)
+                
+                # Add source and model name to the generated data
+                generated_data["source"] = article_titles
+                generated_data["model_name"] = model_name
+                
+                generated_datasets.append(schemas.GeneratedDataset(**generated_data))
+                success_count += 1
+                
+            except Exception as e:
+                print(f"Error generating dataset {i+1}: {e}")
+                failed_count += 1
+                continue
+        
+        return schemas.BatchGeneratedDataset(
+            datasets=generated_datasets,
+            total_generated=request.batch_size,
+            success_count=success_count,
+            failed_count=failed_count
+        )
+        
+    except Exception as e:
+        print(f"Error in batch generation: {e}")
+        raise HTTPException(status_code=500, detail=f"批量生成資料失敗: {str(e)}")
+
 @router.post("/confirm-generated", response_model=schemas.RawDataset, status_code=status.HTTP_201_CREATED)
 def confirm_generated_dataset(
     dataset: schemas.RawDatasetCreate,
@@ -86,6 +194,22 @@ def confirm_generated_dataset(
     Only accessible by admin users.
     """
     return crud.create_raw_dataset(db=db, dataset=dataset)
+
+@router.post("/batch-confirm-generated", response_model=List[schemas.RawDataset], status_code=status.HTTP_201_CREATED)
+def batch_confirm_generated_datasets(
+    datasets: List[schemas.RawDatasetCreate],
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_current_admin_user)
+):
+    """
+    Confirm and save multiple generated datasets to the database.
+    Only accessible by admin users.
+    """
+    created_datasets = []
+    for dataset in datasets:
+        created_dataset = crud.create_raw_dataset(db=db, dataset=dataset)
+        created_datasets.append(created_dataset)
+    return created_datasets
 
 @router.get("/", response_model=List[schemas.RawDatasetWithStats])
 def read_raw_datasets(

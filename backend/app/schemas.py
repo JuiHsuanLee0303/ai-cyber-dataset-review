@@ -210,6 +210,12 @@ class GenerateFromRegulationsRequest(BaseModel):
     selected_article_ids: List[int]
     model_name: Optional[str] = None  # 新增：指定使用的模型名稱
 
+class BatchGenerateFromRegulationsRequest(BaseModel):
+    selected_article_ids: List[int]
+    model_name: Optional[str] = None  # 指定使用的模型名稱
+    batch_size: int = 1  # 批量生成數量，預設為1
+    random_selection: bool = True  # 是否隨機選擇法規，預設為True
+
 class GeneratedDataset(BaseModel):
     instruction: str
     input: Optional[str] = None
@@ -218,3 +224,9 @@ class GeneratedDataset(BaseModel):
     history: List[Dict[str, str]] = []
     source: List[str] = []
     model_name: Optional[str] = None  # 新增：生成使用的模型名稱
+
+class BatchGeneratedDataset(BaseModel):
+    datasets: List[GeneratedDataset]
+    total_generated: int
+    success_count: int
+    failed_count: int

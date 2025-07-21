@@ -668,6 +668,94 @@
               <h4 class="text-lg font-semibold text-gray-900">選擇法規條文</h4>
             </div>
             
+            <!-- Generation Type Selection -->
+            <div class="mb-6">
+              <h5 class="font-medium text-gray-700 mb-3">生成模式</h5>
+              <div class="grid grid-cols-2 gap-4">
+                <div 
+                  @click="generationType = 'single'"
+                  :class="[
+                    'p-4 rounded-lg border cursor-pointer transition-all duration-200',
+                    generationType === 'single'
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="flex items-center space-x-3">
+                    <input 
+                      type="radio" 
+                      value="single"
+                      v-model="generationType"
+                      class="rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                      @click.stop
+                    />
+                    <div>
+                      <div class="font-medium text-gray-900">單筆生成</div>
+                      <div class="text-sm text-gray-500">生成一筆資料</div>
+                    </div>
+                  </div>
+                </div>
+                <div 
+                  @click="generationType = 'batch'"
+                  :class="[
+                    'p-4 rounded-lg border cursor-pointer transition-all duration-200',
+                    generationType === 'batch'
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="flex items-center space-x-3">
+                    <input 
+                      type="radio" 
+                      value="batch"
+                      v-model="generationType"
+                      class="rounded-full border-gray-300 text-blue-600 focus:ring-blue-500"
+                      @click.stop
+                    />
+                    <div>
+                      <div class="font-medium text-gray-900">批量生成</div>
+                      <div class="text-sm text-gray-500">批量生成多筆資料</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Batch Generation Settings -->
+            <div v-if="generationType === 'batch'" class="mb-6">
+              <h5 class="font-medium text-gray-700 mb-3">批量生成設定</h5>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">生成數量</label>
+                  <input 
+                    v-model.number="batchSize" 
+                    type="number" 
+                    min="1" 
+                    max="20"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="1-20"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">建議一次生成 1-20 筆資料</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">法規選擇方式</label>
+                  <div class="space-y-2">
+                    <label class="flex items-center">
+                      <input 
+                        v-model="randomSelection" 
+                        type="checkbox" 
+                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-700">隨機選擇法規</span>
+                    </label>
+                    <p class="text-xs text-gray-500">
+                      {{ randomSelection ? '啟用後系統會自動隨機選擇法規，無需手動選擇' : '啟用後每次生成會隨機選擇 1-3 個法規' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <!-- Model Selection -->
             <div class="mb-6">
               <h5 class="font-medium text-gray-700 mb-3">選擇生成模型</h5>
@@ -701,14 +789,35 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <!-- Available Regulations -->
               <div class="space-y-4">
-                <h5 class="font-medium text-gray-700">可選法規 ({{ availableRegulations.length }})</h5>
-                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h5 class="font-medium text-gray-700">
+                  可選法規 ({{ availableRegulations.length }})
+                  <span v-if="generationType === 'batch' && randomSelection" class="text-sm text-blue-600 font-normal">
+                    - 隨機選擇模式
+                  </span>
+                </h5>
+                <div 
+                  :class="[
+                    'max-h-96 overflow-y-auto border rounded-lg p-4',
+                    generationType === 'batch' && randomSelection
+                      ? 'bg-gray-100 border-gray-300'
+                      : 'bg-gray-50 border-gray-200'
+                  ]"
+                >
                   <div v-if="regulationsLoading" class="flex items-center justify-center py-8">
                     <div class="loading-spinner w-6 h-6"></div>
                     <span class="ml-2 text-gray-600">載入法規中...</span>
                   </div>
                   <div v-else-if="availableRegulations.length === 0" class="text-center py-8 text-gray-500">
                     沒有可用的法規
+                  </div>
+                  <div v-else-if="generationType === 'batch' && randomSelection" class="text-center py-8">
+                    <div class="text-gray-500 mb-2">
+                      <svg class="w-12 h-12 mx-auto mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                      </svg>
+                      <p class="text-sm">隨機選擇模式已啟用</p>
+                      <p class="text-xs mt-1">系統將自動從所有法規中隨機選擇</p>
+                    </div>
                   </div>
                   <div v-else class="space-y-2">
                     <div 
@@ -742,9 +851,31 @@
               
               <!-- Selected Regulations -->
               <div class="space-y-4">
-                <h5 class="font-medium text-gray-700">已選法規 ({{ selectedRegulations.length }})</h5>
-                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-blue-50">
-                  <div v-if="selectedRegulations.length === 0" class="text-center py-8 text-gray-500">
+                <h5 class="font-medium text-gray-700">
+                  已選法規 ({{ selectedRegulations.length }})
+                  <span v-if="generationType === 'batch' && randomSelection" class="text-sm text-blue-600 font-normal">
+                    - 隨機選擇模式
+                  </span>
+                </h5>
+                <div 
+                  :class="[
+                    'max-h-96 overflow-y-auto border rounded-lg p-4',
+                    generationType === 'batch' && randomSelection
+                      ? 'bg-blue-100 border-blue-300'
+                      : 'bg-blue-50 border-gray-200'
+                  ]"
+                >
+                  <div v-if="generationType === 'batch' && randomSelection" class="text-center py-8">
+                    <div class="text-blue-600 mb-2">
+                      <svg class="w-12 h-12 mx-auto mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                      </svg>
+                      <p class="text-sm font-medium">隨機選擇模式</p>
+                      <p class="text-xs mt-1">系統將自動從所有法規中隨機選擇 1-3 個</p>
+                      <p class="text-xs mt-1">無需手動選擇法規</p>
+                    </div>
+                  </div>
+                  <div v-else-if="selectedRegulations.length === 0" class="text-center py-8 text-gray-500">
                     請選擇法規條文
                   </div>
                   <div v-else class="space-y-3">
@@ -781,7 +912,7 @@
              <div class="flex justify-center pt-6 border-t border-gray-200">
                <button 
                  @click="generateData" 
-                 :disabled="selectedRegulations.length === 0 || !selectedModel || generating"
+                 :disabled="(!selectedModel || generating || (generationType === 'batch' && (!batchSize || batchSize < 1 || batchSize > 20)) || (!randomSelection && selectedRegulations.length === 0))"
                  class="btn btn-primary px-8 py-3"
                >
                  <svg v-if="generating" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -791,7 +922,7 @@
                  <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                  </svg>
-                 <span>{{ generating ? '生成中...' : '生成資料' }}</span>
+                 <span>{{ generating ? '生成中...' : (generationType === 'batch' ? `批量生成 ${batchSize} 筆資料` : '生成資料') }}</span>
                </button>
              </div>
           </div>
@@ -800,49 +931,165 @@
           <div v-if="generateStep === 2" class="space-y-6">
             <div class="flex items-center space-x-2 mb-4">
               <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
-              <h4 class="text-lg font-semibold text-gray-900">生成結果</h4>
+              <h4 class="text-lg font-semibold text-gray-900">
+                {{ generationType === 'batch' ? '批量生成結果' : '生成結果' }}
+              </h4>
             </div>
             
             <div v-if="generating" class="flex flex-col items-center justify-center py-12">
               <div class="loading-spinner w-12 h-12"></div>
-              <p class="mt-4 text-lg font-medium text-gray-700">正在生成資料...</p>
+              <p class="mt-4 text-lg font-medium text-gray-700">
+                {{ generationType === 'batch' ? `正在批量生成 ${batchSize} 筆資料...` : '正在生成資料...' }}
+              </p>
               <p class="mt-2 text-sm text-gray-500">請稍候，AI正在根據選取的法規生成內容</p>
             </div>
             
-            <div v-else-if="generatedData" class="space-y-6">
+            <div v-else-if="generatedData || batchGeneratedData" class="space-y-6">
+              <!-- Batch Generation Summary -->
+              <div v-if="generationType === 'batch' && batchGeneratedData" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h5 class="font-medium text-blue-900">批量生成摘要</h5>
+                    <p class="text-sm text-blue-700 mt-1">
+                      成功生成 {{ batchGeneratedData.success_count }} 筆，失敗 {{ batchGeneratedData.failed_count }} 筆
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold text-blue-600">{{ batchGeneratedData.success_count }}</div>
+                    <div class="text-sm text-blue-500">成功筆數</div>
+                  </div>
+                </div>
+              </div>
               <!-- Generated Content -->
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="space-y-4">
-                  <h5 class="font-medium text-gray-700">生成的內容</h5>
+              <div v-if="generationType === 'single'">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div class="space-y-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">指令 (Instruction)</label>
-                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.instruction }}</div>
+                    <h5 class="font-medium text-gray-700">生成的內容</h5>
+                    <div class="space-y-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">指令 (Instruction)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.instruction }}</div>
+                      </div>
+                      <div v-if="generatedData.input">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">輸入 (Input)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.input }}</div>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">輸出 (Output)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800 whitespace-pre-wrap">{{ generatedData.output }}</div>
+                      </div>
+                      <div v-if="generatedData.system">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.system }}</div>
+                      </div>
                     </div>
-                    <div v-if="generatedData.input">
-                      <label class="block text-sm font-medium text-gray-700 mb-2">輸入 (Input)</label>
-                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.input }}</div>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">輸出 (Output)</label>
-                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800 whitespace-pre-wrap">{{ generatedData.output }}</div>
-                    </div>
-                    <div v-if="generatedData.system">
-                      <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
-                      <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.system }}</div>
+                  </div>
+                  
+                  <div class="space-y-4">
+                    <h5 class="font-medium text-gray-700">資料來源</h5>
+                    <div class="space-y-3">
+                      <div 
+                        v-for="source in generatedData.source" 
+                        :key="source"
+                        class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <div class="text-sm text-gray-800">{{ source }}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                <div class="space-y-4">
-                  <h5 class="font-medium text-gray-700">資料來源</h5>
-                  <div class="space-y-3">
-                    <div 
-                      v-for="source in generatedData.source" 
-                      :key="source"
-                      class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+              </div>
+              
+              <!-- Batch Generated Content -->
+              <div v-else-if="generationType === 'batch' && batchGeneratedData" class="space-y-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h5 class="font-medium text-gray-700">逐筆審批 ({{ currentBatchIndex + 1 }}/{{ batchGeneratedData.datasets.length }})</h5>
+                  <div class="flex items-center space-x-2">
+                    <button 
+                      @click="previousBatchItem" 
+                      :disabled="currentBatchIndex === 0"
+                      class="btn btn-secondary btn-sm"
                     >
-                      <div class="text-sm text-gray-800">{{ source }}</div>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                      </svg>
+                      上一筆
+                    </button>
+                    <button 
+                      @click="nextBatchItem" 
+                      :disabled="currentBatchIndex === batchGeneratedData.datasets.length - 1"
+                      class="btn btn-secondary btn-sm"
+                    >
+                      下一筆
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div class="space-y-4">
+                    <h5 class="font-medium text-gray-700">生成的內容</h5>
+                    <div class="space-y-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">指令 (Instruction)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ currentBatchData.instruction }}</div>
+                      </div>
+                      <div v-if="currentBatchData.input">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">輸入 (Input)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ currentBatchData.input }}</div>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">輸出 (Output)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800 whitespace-pre-wrap">{{ currentBatchData.output }}</div>
+                      </div>
+                      <div v-if="currentBatchData.system">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ currentBatchData.system }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="space-y-4">
+                    <h5 class="font-medium text-gray-700">資料來源</h5>
+                    <div class="space-y-3">
+                      <div 
+                        v-for="source in currentBatchData.source" 
+                        :key="source"
+                        class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <div class="text-sm text-gray-800">{{ source }}</div>
+                      </div>
+                    </div>
+                    
+                    <!-- Batch Item Selection -->
+                    <div class="mt-6">
+                      <h6 class="font-medium text-gray-700 mb-3">選擇此筆資料</h6>
+                      <div class="flex space-x-2">
+                        <button 
+                          @click="selectBatchItem(currentBatchIndex, true)"
+                          :class="[
+                            'px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                            batchSelectedItems[currentBatchIndex] === true
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                          ]"
+                        >
+                          ✓ 選擇
+                        </button>
+                        <button 
+                          @click="selectBatchItem(currentBatchIndex, false)"
+                          :class="[
+                            'px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                            batchSelectedItems[currentBatchIndex] === false
+                              ? 'bg-red-100 text-red-800 border border-red-300'
+                              : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                          ]"
+                        >
+                          ✗ 跳過
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -850,26 +1097,54 @@
               
               <!-- Action Buttons -->
               <div class="flex justify-center space-x-4 pt-6 border-t border-gray-200">
-                <button 
-                  @click="regenerateData" 
-                  :disabled="generating"
-                  class="btn btn-warning px-4 py-2"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                  </svg>
-                  <span>重新生成</span>
-                </button>
-                <button 
-                  @click="confirmGeneratedData" 
-                  :disabled="confirming"
-                  class="btn btn-success px-4 py-2"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span>{{ confirming ? '確認中...' : '確認加入' }}</span>
-                </button>
+                <!-- Single Generation Actions -->
+                <template v-if="generationType === 'single'">
+                  <button 
+                    @click="regenerateData" 
+                    :disabled="generating"
+                    class="btn btn-warning px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>重新生成</span>
+                  </button>
+                  <button 
+                    @click="confirmGeneratedData" 
+                    :disabled="confirming"
+                    class="btn btn-success px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>{{ confirming ? '確認中...' : '確認加入' }}</span>
+                  </button>
+                </template>
+                
+                <!-- Batch Generation Actions -->
+                <template v-else-if="generationType === 'batch'">
+                  <button 
+                    @click="regenerateBatchData" 
+                    :disabled="generating"
+                    class="btn btn-warning px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>重新生成</span>
+                  </button>
+                  <button 
+                    @click="confirmBatchGeneratedData" 
+                    :disabled="confirming || getSelectedBatchCount() === 0"
+                    class="btn btn-success px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>{{ confirming ? '確認中...' : `確認加入 (${getSelectedBatchCount()} 筆)` }}</span>
+                  </button>
+                </template>
+                
                 <button @click="closeGenerateModal" class="btn btn-secondary px-4 py-2">
                   <span>取消</span>
                 </button>
@@ -883,7 +1158,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import useAuth from '../store/auth'
 import { useToast } from 'vue-toastification'
 import useConfirm from '../composables/useConfirm'
@@ -939,6 +1214,14 @@ const regulationsLoading = ref(false)
 const generating = ref(false)
 const generatedData = ref(null)
 const confirming = ref(false)
+
+// For Batch Generation
+const generationType = ref('single') // 'single' or 'batch'
+const batchSize = ref(5)
+const randomSelection = ref(true)
+const batchGeneratedData = ref(null)
+const currentBatchIndex = ref(0)
+const batchSelectedItems = ref({})
 
 // For Model Selection
 const availableModels = ref([])
@@ -1382,10 +1665,24 @@ const fetchRegulations = async () => {
   }
 }
 
+// Computed properties for batch generation
+const currentBatchData = computed(() => {
+  if (batchGeneratedData.value && batchGeneratedData.value.datasets && batchGeneratedData.value.datasets[currentBatchIndex.value]) {
+    return batchGeneratedData.value.datasets[currentBatchIndex.value]
+  }
+  return null
+})
+
 const openGenerateModal = async () => {
   generateStep.value = 1
   selectedRegulations.value = []
   selectedModel.value = ''
+  generationType.value = 'single'
+  batchSize.value = 5
+  randomSelection.value = true
+  batchGeneratedData.value = null
+  currentBatchIndex.value = 0
+  batchSelectedItems.value = {}
   await fetchRegulations()
   await fetchAvailableModels()
   showGenerateModal.value = true
@@ -1395,6 +1692,9 @@ const closeGenerateModal = () => {
   showGenerateModal.value = false
   generateStep.value = 1
   generatedData.value = null
+  batchGeneratedData.value = null
+  currentBatchIndex.value = 0
+  batchSelectedItems.value = {}
   confirming.value = false
 }
 
@@ -1439,7 +1739,8 @@ const toggleModelSelection = (model) => {
 }
 
 const generateData = async () => {
-  if (selectedRegulations.value.length === 0) {
+  // 檢查是否啟用隨機選擇，如果沒有則需要選擇法規
+  if (!randomSelection.value && selectedRegulations.value.length === 0) {
     toast.error('請選擇至少一個法規條文')
     return
   }
@@ -1449,19 +1750,54 @@ const generateData = async () => {
     return
   }
 
+  if (generationType.value === 'batch' && (!batchSize.value || batchSize.value < 1 || batchSize.value > 20)) {
+    toast.error('請設定有效的生成數量 (1-20)')
+    return
+  }
+
   generating.value = true
   generatedData.value = null
+  batchGeneratedData.value = null
+  currentBatchIndex.value = 0
+  batchSelectedItems.value = {}
   generateStep.value = 2
   
   try {
-    const payload = {
-      selected_article_ids: selectedRegulations.value,
-      model_name: selectedModel.value  // 新增：指定使用的模型
+    // 決定要使用的法規ID列表
+    let articleIds = selectedRegulations.value
+    if (generationType.value === 'batch' && randomSelection.value) {
+      // 隨機選擇模式：使用所有可用的法規
+      articleIds = availableRegulations.value.map(r => r.id)
     }
-    const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
-      timeout: 60000 // 60秒超時
-    })
-    generatedData.value = response.data
+    
+    if (generationType.value === 'single') {
+      // Single generation
+      const payload = {
+        selected_article_ids: articleIds,
+        model_name: selectedModel.value
+      }
+      const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
+        timeout: 60000 // 60秒超時
+      })
+      generatedData.value = response.data
+    } else {
+      // Batch generation
+      const payload = {
+        selected_article_ids: articleIds,
+        model_name: selectedModel.value,
+        batch_size: batchSize.value,
+        random_selection: randomSelection.value
+      }
+      const response = await instance.post('/api/v1/datasets/batch-generate-from-regulations', payload, {
+        timeout: 300000 // 5分鐘超時
+      })
+      console.log(response.data)
+      batchGeneratedData.value = response.data
+      // Initialize selection state
+      batchGeneratedData.value.datasets.forEach((_, index) => {
+        batchSelectedItems.value[index] = null // null = unselected, true = selected, false = skipped
+      })
+    }
   } catch (err) {
     error.value = `生成資料失敗: ${err.response?.data?.detail || '未知錯誤'}`
     toast.error(error.value)
@@ -1484,7 +1820,7 @@ const regenerateData = async () => {
   try {
     const payload = {
       selected_article_ids: selectedRegulations.value,
-      model_name: selectedModel.value  // 新增：指定使用的模型
+      model_name: selectedModel.value
     }
     const response = await instance.post('/api/v1/datasets/generate-from-regulations', payload, {
       timeout: 60000 // 60秒超時
@@ -1498,6 +1834,107 @@ const regenerateData = async () => {
     console.error('重新生成失敗:', err)
   } finally {
     generating.value = false
+  }
+}
+
+const regenerateBatchData = async () => {
+  if (!batchGeneratedData.value) {
+    toast.error('請先生成資料')
+    return
+  }
+
+  generating.value = true
+  batchGeneratedData.value = null
+  currentBatchIndex.value = 0
+  batchSelectedItems.value = {}
+  
+  try {
+    // 決定要使用的法規ID列表
+    let articleIds = selectedRegulations.value
+    if (randomSelection.value) {
+      // 隨機選擇模式：使用所有可用的法規
+      articleIds = availableRegulations.value.map(r => r.id)
+    }
+    
+    const payload = {
+      selected_article_ids: articleIds,
+      model_name: selectedModel.value,
+      batch_size: batchSize.value,
+      random_selection: randomSelection.value
+    }
+    const response = await instance.post('/api/v1/datasets/batch-generate-from-regulations', payload, {
+      timeout: 300000 // 5分鐘超時
+    })
+    batchGeneratedData.value = response.data
+    // Initialize selection state
+    batchGeneratedData.value.datasets.forEach((_, index) => {
+      batchSelectedItems.value[index] = null
+    })
+    toast.success('批量資料重新生成完成！')
+  } catch (err) {
+    const errorMsg = `重新生成失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
+    console.error('重新生成失敗:', err)
+  } finally {
+    generating.value = false
+  }
+}
+
+// Batch navigation functions
+const nextBatchItem = () => {
+  if (currentBatchIndex.value < batchGeneratedData.value.datasets.length - 1) {
+    currentBatchIndex.value++
+  }
+}
+
+const previousBatchItem = () => {
+  if (currentBatchIndex.value > 0) {
+    currentBatchIndex.value--
+  }
+}
+
+const selectBatchItem = (index, selected) => {
+  batchSelectedItems.value[index] = selected
+}
+
+const getSelectedBatchCount = () => {
+  return Object.values(batchSelectedItems.value).filter(value => value === true).length
+}
+
+const confirmBatchGeneratedData = async () => {
+  const selectedDatasets = batchGeneratedData.value.datasets.filter((_, index) => 
+    batchSelectedItems.value[index] === true
+  )
+  
+  if (selectedDatasets.length === 0) {
+    toast.error('請至少選擇一筆資料')
+    return
+  }
+
+  confirming.value = true
+  try {
+    const payload = selectedDatasets.map(dataset => ({
+      instruction: dataset.instruction,
+      input: dataset.input,
+      output: dataset.output,
+      system: dataset.system,
+      history: dataset.history,
+      source: dataset.source,
+      model_name: dataset.model_name
+    }))
+    
+    const response = await instance.post('/api/v1/datasets/batch-confirm-generated', payload)
+    toast.success(`成功確認加入 ${selectedDatasets.length} 筆資料！`)
+    closeGenerateModal()
+    await fetchDatasets() // Refresh the list
+  } catch (err) {
+    const errorMsg = `確認加入失敗: ${err.response?.data?.detail || '未知錯誤'}`
+    error.value = errorMsg
+    toast.error(errorMsg)
+    console.error('確認加入失敗:', err)
+  } finally {
+    confirming.value = false
   }
 }
 
