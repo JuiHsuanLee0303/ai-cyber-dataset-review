@@ -2,12 +2,11 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
-      - "8443:8000"  # HTTPS port
+      - "8443:8000"   # 只映射 HTTPS 端口
     volumes:
       - ./backend:/app
       - ./data:/app/data
-      - ./ssl:/app/ssl  # Mount SSL certificates
+      - ./ssl:/app/ssl
     environment:
       - DATABASE_URL=sqlite:///./data/test.db
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
