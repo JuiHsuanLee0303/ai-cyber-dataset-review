@@ -108,36 +108,76 @@
                 刷新模型列表
               </button>
               
-              <div v-if="ollamaModels.length > 0" class="flex gap-3">
-                <button
-                  type="button"
-                  @click="selectAllModels"
-                  class="px-4 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
-                >
-                  全選
-                </button>
-                <button
-                  type="button"
-                  @click="clearAllModels"
-                  class="px-4 py-3 bg-slate-600 text-white font-semibold rounded-xl hover:bg-slate-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
-                >
-                  清空
-                </button>
+              <div v-if="ollamaModels.length > 0" class="flex flex-col sm:flex-row gap-3">
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    @click="selectAllModels"
+                    class="px-4 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
+                  >
+                    全選
+                  </button>
+                  <button
+                    type="button"
+                    @click="clearAllModels"
+                    class="px-4 py-3 bg-slate-600 text-white font-semibold rounded-xl hover:bg-slate-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
+                  >
+                    清空
+                  </button>
+                </div>
+                
+                <!-- 按類型選擇按鈕 -->
+                <div v-if="selectedModelType !== 'all'" class="flex gap-3">
+                  <button
+                    type="button"
+                    @click="selectAllModelsOfType(selectedModelType)"
+                    class="px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
+                  >
+                    選擇全部 {{ selectedModelType }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="clearAllModelsOfType(selectedModelType)"
+                    class="px-4 py-3 bg-orange-600 text-white font-semibold rounded-xl hover:bg-orange-700 transition-all duration-200 text-sm md:text-base shadow-sm hover:shadow-md"
+                  >
+                    清空 {{ selectedModelType }}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- 搜索框 -->
-            <div v-if="ollamaModels.length > 5" class="mb-4">
-              <div class="relative">
-                <input
-                  type="text"
-                  v-model="modelSearchQuery"
-                  placeholder="搜索模型..."
-                  class="w-full px-4 py-3 pl-10 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
-                />
-                <svg class="absolute left-3 top-3.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
+            <!-- 搜索和篩選區域 -->
+            <div v-if="ollamaModels.length > 0" class="mb-4 space-y-3">
+              <!-- 模型類型篩選 -->
+              <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1">
+                  <label class="block text-sm font-medium text-slate-700 mb-2">模型類型</label>
+                  <select
+                    v-model="selectedModelType"
+                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
+                  >
+                    <option value="all">全部類型</option>
+                    <option v-for="type in modelTypes.filter(t => t !== 'all')" :key="type" :value="type">
+                      {{ type }}
+                    </option>
+                  </select>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div v-if="ollamaModels.length > 5" class="flex-1">
+                  <label class="block text-sm font-medium text-slate-700 mb-2">搜索模型</label>
+                  <div class="relative">
+                    <input
+                      type="text"
+                      v-model="modelSearchQuery"
+                      placeholder="搜索模型名稱..."
+                      class="w-full px-4 py-3 pl-10 border border-slate-300 rounded-xl text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base bg-slate-50 focus:bg-white"
+                    />
+                    <svg class="absolute left-3 top-3.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -157,10 +197,16 @@
                 <!-- 統計信息 - 固定在頂部 -->
                 <div class="bg-blue-50 border-b border-blue-200 px-4 py-3 sticky top-0 z-10">
                   <div class="flex items-center justify-between text-sm md:text-base">
-                    <span class="text-blue-800">
-                      找到 {{ filteredModels.length }} 個模型
-                      <span v-if="modelSearchQuery">（搜索："{{ modelSearchQuery }}"）</span>
-                    </span>
+                    <div class="flex items-center space-x-4">
+                      <span class="text-blue-800">
+                        找到 {{ filteredModels.length }} 個模型
+                        <span v-if="selectedModelType !== 'all'">（類型：{{ selectedModelType }}）</span>
+                        <span v-if="modelSearchQuery">（搜索："{{ modelSearchQuery }}"）</span>
+                      </span>
+                      <span class="text-blue-600">
+                        共 {{ ollamaModels.length }} 個模型
+                      </span>
+                    </div>
                     <span class="text-blue-800 font-medium">
                       已選擇 {{ form.ollama_models?.length || 0 }} 個
                     </span>
@@ -238,20 +284,37 @@
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                 </svg>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm md:text-base font-medium text-blue-900 mb-1">
+                  <p class="text-sm md:text-base font-medium text-blue-900 mb-2">
                     已選擇 {{ form.ollama_models.length }} 個模型
                   </p>
-                  <div class="flex flex-wrap gap-1">
-                    <span v-for="model in form.ollama_models" :key="model"
-                          class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-900 border border-blue-300">
-                      {{ model }}
-                      <button @click="removeModel(model)" 
-                              class="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                        </svg>
-                      </button>
-                    </span>
+                  
+                  <!-- 按類型分組顯示 -->
+                  <div class="space-y-3">
+                    <div v-for="modelType in modelTypes.filter(t => t !== 'all')" :key="modelType">
+                      <div v-if="getSelectedCountOfType(modelType) > 0" class="space-y-2">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-medium text-blue-700 uppercase tracking-wide">
+                            {{ modelType }} ({{ getSelectedCountOfType(modelType) }})
+                          </span>
+                          <button @click="clearAllModelsOfType(modelType)" 
+                                  class="text-xs text-blue-600 hover:text-blue-800 focus:outline-none transition-colors">
+                            清空此類型
+                          </button>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                          <span v-for="model in form.ollama_models.filter(m => getModelType(m) === modelType)" :key="model"
+                                class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-900 border border-blue-300">
+                            {{ model }}
+                            <button @click="removeModel(model)" 
+                                    class="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none transition-colors">
+                              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                              </svg>
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -427,15 +490,63 @@ const pullStatus = ref('')
 
 // Search and Selection
 const modelSearchQuery = ref('')
+const selectedModelType = ref('all') // 新增：模型類型篩選
+
+// 計算屬性：按模型名稱排序並分組
+const sortedAndGroupedModels = computed(() => {
+  // 先按模型名稱排序
+  const sortedModels = [...ollamaModels.value].sort((a, b) => {
+    return a.name.localeCompare(b.name, 'zh-TW')
+  })
+  
+  // 分組模型
+  const grouped = {}
+  sortedModels.forEach(model => {
+    const modelType = getModelType(model.name)
+    if (!grouped[modelType]) {
+      grouped[modelType] = []
+    }
+    grouped[modelType].push(model)
+  })
+  
+  return grouped
+})
+
+// 獲取模型類型
+const getModelType = (modelName) => {
+  const parts = modelName.split(':')
+  return parts[0] || 'unknown'
+}
+
+// 獲取所有模型類型
+const modelTypes = computed(() => {
+  const types = Object.keys(sortedAndGroupedModels.value)
+  return ['all', ...types.sort()]
+})
 
 const filteredModels = computed(() => {
-  if (!modelSearchQuery.value) {
-    return ollamaModels.value
+  let models = []
+  
+  // 根據模型類型篩選
+  if (selectedModelType.value === 'all') {
+    // 如果是全部，則展平所有分組
+    Object.values(sortedAndGroupedModels.value).forEach(group => {
+      models.push(...group)
+    })
+  } else {
+    // 選擇特定類型
+    models = sortedAndGroupedModels.value[selectedModelType.value] || []
   }
-  const query = modelSearchQuery.value.toLowerCase()
-  return ollamaModels.value.filter(model => 
-    model.name.toLowerCase().includes(query)
-  )
+  
+  // 根據搜索查詢篩選
+  if (modelSearchQuery.value) {
+    const query = modelSearchQuery.value.toLowerCase()
+    models = models.filter(model => 
+      model.name.toLowerCase().includes(query)
+    )
+  }
+  
+  return models
 })
 
 const selectAllModels = () => {
@@ -448,6 +559,42 @@ const clearAllModels = () => {
 
 const removeModel = (modelName) => {
   form.value.ollama_models = form.value.ollama_models.filter(name => name !== modelName)
+}
+
+// 選擇特定類型的所有模型
+const selectAllModelsOfType = (modelType) => {
+  if (modelType === 'all') {
+    selectAllModels()
+  } else {
+    const typeModels = sortedAndGroupedModels.value[modelType] || []
+    const typeModelNames = typeModels.map(model => model.name)
+    // 合併現有選擇和該類型的所有模型
+    const currentSelected = new Set(form.value.ollama_models)
+    typeModelNames.forEach(name => currentSelected.add(name))
+    form.value.ollama_models = Array.from(currentSelected)
+  }
+}
+
+// 清空特定類型的所有模型選擇
+const clearAllModelsOfType = (modelType) => {
+  if (modelType === 'all') {
+    clearAllModels()
+  } else {
+    const typeModels = sortedAndGroupedModels.value[modelType] || []
+    const typeModelNames = typeModels.map(model => model.name)
+    form.value.ollama_models = form.value.ollama_models.filter(name => !typeModelNames.includes(name))
+  }
+}
+
+// 獲取特定類型的已選擇模型數量
+const getSelectedCountOfType = (modelType) => {
+  if (modelType === 'all') {
+    return form.value.ollama_models?.length || 0
+  } else {
+    const typeModels = sortedAndGroupedModels.value[modelType] || []
+    const typeModelNames = typeModels.map(model => model.name)
+    return form.value.ollama_models?.filter(name => typeModelNames.includes(name)).length || 0
+  }
 }
 
 // 格式化函數
@@ -550,6 +697,9 @@ const fetchOllamaModels = async () => {
   try {
     const response = await instance.get('/api/v1/ollama/models')
     ollamaModels.value = response.data || []
+    
+    // 重置模型類型選擇器
+    selectedModelType.value = 'all'
     
     if (ollamaModels.value.length === 0) {
       toast.info('Ollama 服務中目前沒有可用的模型。')
