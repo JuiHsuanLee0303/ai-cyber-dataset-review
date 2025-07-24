@@ -287,13 +287,58 @@
     <!-- Articles Table -->
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold flex items-center">
-          <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 class="text-xl font-semibold flex items-center">
+            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            已匯入法規列表
+            <span class="ml-2 text-sm text-gray-500">({{ filteredArticles.length }} 筆)</span>
+          </h2>
+          
+          <!-- 篩選區域 -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <!-- 標題篩選 -->
+            <div class="relative">
+              <input
+                type="text"
+                v-model="titleFilter"
+                placeholder="搜尋法規標題... (按 Enter 快速搜尋)"
+                @keyup.enter="handleSearch"
+                class="w-full sm:w-64 px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+              <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            
+            <!-- 清除篩選按鈕 -->
+            <button
+              v-if="titleFilter"
+              @click="clearFilters"
+              class="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              清除篩選
+            </button>
+          </div>
+        </div>
+        
+        <!-- 篩選統計資訊 -->
+        <div v-if="titleFilter" class="mt-3 flex items-center text-sm text-gray-600">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
-          已匯入法規列表
-          <span class="ml-2 text-sm text-gray-500">({{ articles.length }} 筆)</span>
-        </h2>
+          搜尋標題包含 "{{ titleFilter }}" 的結果：{{ filteredArticles.length }} 筆
+          <span v-if="filteredArticles.length !== articles.length" class="ml-2 text-gray-500">
+            (共 {{ articles.length }} 筆)
+          </span>
+          <span v-if="filteredArticles.length > 0" class="ml-2 text-green-600">
+            ✓ 找到 {{ filteredArticles.length }} 筆符合的結果
+          </span>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -326,9 +371,21 @@
                 <p class="mt-2">沒有資料</p>
               </td>
             </tr>
-            <tr v-else v-for="item in articles" :key="item.id" class="hover:bg-gray-50 transition-colors">
+            <tr v-else-if="titleFilter && filteredArticles.length === 0">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <p class="mt-2">找不到符合 "{{ titleFilter }}" 的法規</p>
+                <p class="mt-1 text-sm text-gray-400">請嘗試其他關鍵字或清除篩選</p>
+              </td>
+            </tr>
+            <tr v-else v-for="item in filteredArticles" :key="item.id" class="hover:bg-gray-50 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.id }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.title }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span v-if="titleFilter" v-html="highlightText(item.title, titleFilter)"></span>
+                <span v-else>{{ item.title }}</span>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ item.number }}</td>
               <td class="px-6 py-4 text-sm text-gray-900">
                 <p class="truncate max-w-lg">{{ item.content.substring(0, 25) }} {{item.content.length > 30 ? '...' : ''}}</p>
@@ -356,7 +413,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import useAuth from '../store/auth'
 import { useToast } from 'vue-toastification'
 import useConfirm from '../composables/useConfirm'
@@ -370,6 +427,21 @@ const loading = ref(true)
 const jsonInput = ref('')
 const importError = ref('')
 const importing = ref(false)
+
+// 篩選相關
+const titleFilter = ref('')
+
+// 篩選後的資料
+const filteredArticles = computed(() => {
+  if (!titleFilter.value.trim()) {
+    return articles.value
+  }
+  
+  const filterText = titleFilter.value.toLowerCase().trim()
+  return articles.value.filter(article => 
+    article.title.toLowerCase().includes(filterText)
+  )
+})
 
 // Tab management
 const activeTab = ref('text')
@@ -397,6 +469,27 @@ const fetchArticles = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 清除篩選
+const clearFilters = () => {
+  titleFilter.value = ''
+}
+
+// 高亮匹配的文字
+const highlightText = (text, searchText) => {
+  if (!searchText.trim()) {
+    return text
+  }
+  
+  const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>')
+}
+
+// 處理搜尋
+const handleSearch = () => {
+  // 這裡可以添加額外的搜尋邏輯，比如記錄搜尋歷史等
+  console.log('搜尋:', titleFilter.value)
 }
 
 const openImportModal = () => {
