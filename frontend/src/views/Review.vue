@@ -176,7 +176,7 @@
                       <div class="flex-1">
                         <div class="text-sm text-neutral-400 mb-2 font-medium">問題</div>
                         <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-neutral-700 whitespace-pre-wrap leading-relaxed text-base">
-                          {{ conversation[0] }}
+                          {{ Array.isArray(conversation) && conversation.length > 0 ? conversation[0] : conversation }}
                         </div>
                       </div>
                     </div>
@@ -185,7 +185,7 @@
                       <div class="flex-1">
                         <div class="text-sm text-neutral-400 mb-2 font-medium">回答</div>
                         <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-neutral-700 whitespace-pre-wrap leading-relaxed text-base">
-                          {{ conversation[1] }}
+                          {{ Array.isArray(conversation) && conversation.length > 1 ? conversation[1] : '' }}
                         </div>
                       </div>
                     </div>

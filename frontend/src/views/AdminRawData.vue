@@ -363,6 +363,35 @@
                       <p class="text-xs sm:text-sm text-gray-800">{{ item.model_name }}</p>
                     </div>
                   </div>
+                  
+                  <!-- History (if exists) -->
+                  <div v-if="item.history && item.history.length > 0">
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-500 rounded-full mr-2"></span>
+                      對話歷史 (History)
+                    </h4>
+                    <div class="bg-gray-50 rounded-md p-2 sm:p-3">
+                      <div class="space-y-2">
+                        <div v-for="(conversation, index) in item.history" :key="index" class="text-xs sm:text-sm">
+                          <div class="flex items-start space-x-2">
+                            <div class="flex-shrink-0 w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                              <span class="text-xs font-bold text-orange-600">{{ index + 1 }}</span>
+                            </div>
+                            <div class="flex-1 space-y-1">
+                              <div class="bg-white border border-orange-200 rounded p-2">
+                                <div class="text-orange-600 font-medium text-xs mb-1">問題:</div>
+                                <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 0 ? conversation[0] : conversation }}</div>
+                              </div>
+                              <div class="bg-white border border-orange-200 rounded p-2">
+                                <div class="text-orange-600 font-medium text-xs mb-1">回答:</div>
+                                <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 1 ? conversation[1] : '' }}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -413,6 +442,7 @@
                   <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸入</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">輸出</th>
                   <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                  <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">歷史</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">統計</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                 </tr>
@@ -446,6 +476,14 @@
                   </td>
                   <td class="hidden md:table-cell px-6 py-4 text-xs sm:text-sm text-gray-900">
                     <div class="truncate" :title="item.model_name">{{ item.model_name || '-' }}</div>
+                  </td>
+                  <td class="hidden lg:table-cell px-6 py-4 text-xs sm:text-sm text-gray-900">
+                    <div v-if="item.history && item.history.length > 0" class="truncate" :title="`${item.history.length} 輪對話`">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        {{ item.history.length }} 輪
+                      </span>
+                    </div>
+                    <div v-else class="text-gray-400">-</div>
                   </td>
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                     <div class="space-y-1">
@@ -641,9 +679,9 @@
                     v-model="form.history" 
                     rows="3" 
                     class="form-textarea focus:ring-2 focus:ring-gray-500 focus:border-gray-500 font-mono text-sm" 
-                    placeholder='[{"role": "user", "content": "..."}]'
+                    placeholder='[["問題1", "回答1"], ["問題2", "回答2"]]'
                   ></textarea>
-                  <p class="text-xs text-gray-500 mt-1">JSON格式的對話歷史紀錄</p>
+                  <p class="text-xs text-gray-500 mt-1">二維陣列格式的對話歷史紀錄，格式為 [指令, 回答]</p>
                 </div>
               </div>
             </div>
@@ -805,7 +843,7 @@
     "input": "為什麼政府要特別訂資安獎懲規定？",
     "output": "這是根據《資通安全管理法》第15條與第19條訂定的...",
     "system": "說明本辦法與母法的法律關係。",
-    "history": [],
+    "history": [["什麼是資安法規？", "資安法規是保護資訊安全的相關法律規定"]],
     "source": ["公務機關所屬人員資通安全事項獎懲辦法第1條"],
     "model_name": "llama3"
   }
@@ -1864,6 +1902,17 @@ const parseBatchData = () => {
         system: item.system || '',
         history: Array.isArray(item.history) ? item.history : [],
         source: Array.isArray(item.source) ? item.source : []
+      }
+      
+      // 驗證 history 格式
+      if (normalizedItem.history.length > 0) {
+        for (let j = 0; j < normalizedItem.history.length; j++) {
+          const historyItem = normalizedItem.history[j]
+          if (!Array.isArray(historyItem) || historyItem.length !== 2) {
+            batchError.value = `第 ${i + 1} 筆資料的 history[${j}] 格式錯誤，應為 [指令, 回答] 格式`
+            return
+          }
+        }
       }
       
       validData.push(normalizedItem)

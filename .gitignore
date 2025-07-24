@@ -27,3 +27,5 @@ __pycache__/
 node_modules/
 ssl/
 docker-compose.yml
+
+.venv
