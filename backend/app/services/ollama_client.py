@@ -11,7 +11,7 @@ class OllamaClient:
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.host, timeout=300.0)  # 增加到 5 分鐘
 
-    async def generate(self, prompt: str, context: Dict[str, Any] = None) -> str:
+    async def generate(self, prompt: str, context: Dict[str, Any] = None, history: List[Dict[str, Any]] = None) -> str:
         """
         Generates content using the Ollama API.
         """
@@ -21,16 +21,39 @@ class OllamaClient:
             context_str = "\n".join(f"- {k}: {v}" for k, v in context.items())
             full_prompt = f"{prompt}\n\nPlease consider the following context:\n{context_str}"
 
+        if history:
+            chat_history = []
+            for item in history:
+                chat_history.append({
+                    "role": item["role"],
+                    "content": item["content"]
+                })
+            chat_history.append({"role": "user", "content": full_prompt})
+
         payload = {
             "model": self.model,
-            "prompt": full_prompt,
-            "stream": False,  # We want the full response at once
+            "messages": chat_history,
+            "stream": False,
             "think": False,
+            "format": {
+                "type": "object",
+                "properties": {
+                    "response": {
+                        "instruction": "string",
+                        "input": "string",
+                        "output": "string",
+                        "system": "string",
+                        "history": "array"
+                    }
+                }
+            }
         }
+
+        print(payload)
 
         try:
             print(f"Sending request to Ollama with prompt: {full_prompt[:200]}...")
-            response = await self.client.post("/api/generate", json=payload)
+            response = await self.client.post("/api/chat", json=payload)
             response.raise_for_status()
             
             data = response.json()
@@ -65,7 +88,7 @@ class OllamaClient:
 請嚴格按照以下 JSON 格式輸出，不要包含任何其他文字：
 {
   "instruction": "明確的指令內容",
-  "input": "輸入內容（如果有的話）",
+  "input": "輸入內容（使用者的問題或需求）",
   "output": "期望的輸出內容"
 }"""
         
@@ -96,10 +119,11 @@ class OllamaClient:
         # 6. Final instruction
         prompt_parts.append("## 生成要求")
         prompt_parts.append("請根據上述資訊，生成一個完整的指令微調資料集項目。確保：")
-        prompt_parts.append("1. 指令清楚明確，與資安相關")
-        prompt_parts.append("2. 輸入內容提供適當的上下文")
-        prompt_parts.append("3. 輸出內容準確、實用且符合法規要求")
-        prompt_parts.append("4. 如果提供了拒絕原因，請針對這些問題進行改進")
+        prompt_parts.append("1. 指令清楚明確，要求模型回答資安相關問題")
+        prompt_parts.append("2. 輸入內容提供適當的上下文，提出與法規依據相關但不直接詢問法規內容的問題")
+        prompt_parts.append("3. 輸出內容準確、實用且依照法規依據回答")
+        prompt_parts.append("4. 如果提供了拒絕原因，請針對這些問題改進原始需求")
+        prompt_parts.append("5. 請以繁體中文回答")
         
         # Combine all parts
         full_prompt = "\n\n".join(prompt_parts)

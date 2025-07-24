@@ -23,7 +23,7 @@ services:
       - "4040:4040"
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN} # 從環境變數讀取您的 ngrok token
-    command: http https://backend:8000 --domain your-custom-domain.ngrok-free.app # 將 your-custom-domain.ngrok-free.app 換成您自己的
+    command: http https://backend:8000 --domain gently-flowing-halibut.ngrok-free.app # 將 your-custom-domain.ngrok-free.app 換成您自己的
     depends_on:
       - backend
     networks:
