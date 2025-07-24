@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app import crud
 from app.services.ollama_client import OllamaClient
-
+import json
 import random
 
 async def regenerate_dataset(db: Session, dataset_id: int, model_name: str = None):
@@ -72,19 +72,23 @@ async def regenerate_dataset(db: Session, dataset_id: int, model_name: str = Non
         # Get current review stats before clearing logs
         current_stats = crud.get_dataset_review_stats(db, dataset_id)
         
-        history.append({
-            "instruction": dataset.instruction,
-            "input": dataset.input,
-            "output": dataset.output,
+        # 修正：將歷史記錄轉換為二維陣列格式 [指令, 回答]
+        if dataset.instruction and dataset.output:
+            history.append([dataset.instruction, dataset.output])
+        
+        # 保存額外的元資料到系統欄位（如果需要）
+        system_info = {
             "reject_count": current_stats["reject_count"],
             "accept_count": current_stats["accept_count"],
-            "rejection_reasons": reasons
-        })
+            "rejection_reasons": reasons,
+            "previous_input": dataset.input
+        }
 
         # Update with new structured content
         dataset.instruction = structured_result["instruction"]
         dataset.input = structured_result["input"]
         dataset.output = structured_result["output"]
+        dataset.system = json.dumps(system_info) if system_info else None  # 保存元資料到系統欄位
         dataset.model_name = selected_model  # 新增：保存使用的模型名稱
         dataset.review_status = "pending"
         dataset.history = history

@@ -61,7 +61,7 @@ class RawDatasetBase(BaseModel):
     output: str
     system: Optional[str] = None
     source: Optional[List[str]] = []
-    history: Optional[List[Any]] = []
+    history: Optional[List[List[str]]] = []  # 修正：改為二維陣列格式 [指令, 回答]
     model_name: Optional[str] = None  # 新增：生成使用的模型名稱
 
 class RawDatasetCreate(RawDatasetBase):
@@ -220,8 +220,7 @@ class GeneratedDataset(BaseModel):
     instruction: str
     input: Optional[str] = None
     output: str
-    system: Optional[str] = None
-    history: List[Dict[str, str]] = []
+    history: List[List[str]] = []  # 修正：改為二維陣列格式 [指令, 回答]
     source: List[str] = []
     model_name: Optional[str] = None  # 新增：生成使用的模型名稱
 
