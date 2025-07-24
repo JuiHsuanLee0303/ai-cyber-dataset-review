@@ -40,8 +40,8 @@
               </span>
             </td>
             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
-              <button @click="openEditModal(user)" class="text-indigo-600 hover:text-indigo-900 mr-4 disabled:opacity-50" :disabled="user.username === 'admin'">編輯</button>
-              <button @click="handleDeleteUser(user)" class="text-red-600 hover:text-red-900 disabled:opacity-50" :disabled="user.username === 'admin'">刪除</button>
+              <button @click="openEditModal(user)" class="text-indigo-600 hover:text-indigo-900 mr-4 disabled:opacity-50" :disabled="user.username === state.user?.username">編輯</button>
+              <button @click="handleDeleteUser(user)" class="text-red-600 hover:text-red-900 disabled:opacity-50" :disabled="user.username === state.user?.username">刪除</button>
             </td>
           </tr>
         </tbody>
@@ -113,7 +113,7 @@
 import { ref, onMounted } from 'vue'
 import useAuth from '../store/auth'
 
-const { instance } = useAuth()
+const { state, instance } = useAuth()
 
 const users = ref([])
 const loading = ref(true)
