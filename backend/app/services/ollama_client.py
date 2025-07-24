@@ -192,6 +192,32 @@ class OllamaClient:
                 if "history" not in result:
                     result["history"] = []
                 
+                # 驗證和修正 history 格式
+                if "history" in result and isinstance(result["history"], list):
+                    corrected_history = []
+                    for item in result["history"]:
+                        if isinstance(item, list) and len(item) == 2:
+                            # 正確的二維陣列格式
+                            corrected_history.append(item)
+                        elif isinstance(item, str):
+                            # 如果是字串，可能是單一問題或回答，跳過
+                            continue
+                        elif isinstance(item, dict):
+                            # 如果是物件，嘗試提取問題和回答
+                            if "question" in item and "answer" in item:
+                                corrected_history.append([item["question"], item["answer"]])
+                            elif "instruction" in item and "output" in item:
+                                corrected_history.append([item["instruction"], item["output"]])
+                            else:
+                                # 無法解析的格式，跳過
+                                continue
+                        else:
+                            # 其他格式，跳過
+                            continue
+                    result["history"] = corrected_history
+                else:
+                    result["history"] = []
+                
                 return result
                 
             except json.JSONDecodeError as e:
@@ -259,6 +285,32 @@ class OllamaClient:
                 if "output" not in result:
                     result["output"] = "無法生成輸出內容"
                 if "history" not in result:
+                    result["history"] = []
+                
+                # 驗證和修正 history 格式
+                if "history" in result and isinstance(result["history"], list):
+                    corrected_history = []
+                    for item in result["history"]:
+                        if isinstance(item, list) and len(item) == 2:
+                            # 正確的二維陣列格式
+                            corrected_history.append(item)
+                        elif isinstance(item, str):
+                            # 如果是字串，可能是單一問題或回答，跳過
+                            continue
+                        elif isinstance(item, dict):
+                            # 如果是物件，嘗試提取問題和回答
+                            if "question" in item and "answer" in item:
+                                corrected_history.append([item["question"], item["answer"]])
+                            elif "instruction" in item and "output" in item:
+                                corrected_history.append([item["instruction"], item["output"]])
+                            else:
+                                # 無法解析的格式，跳過
+                                continue
+                        else:
+                            # 其他格式，跳過
+                            continue
+                    result["history"] = corrected_history
+                else:
                     result["history"] = []
                 
                 return result
