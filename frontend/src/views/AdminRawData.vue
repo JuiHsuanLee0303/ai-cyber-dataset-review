@@ -1259,6 +1259,30 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
                         <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ generatedData.system }}</div>
                       </div>
+                      <div v-if="generatedData.history && generatedData.history.length > 0">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">對話歷史 (History)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">
+                          <div class="space-y-2">
+                            <div v-for="(conversation, index) in generatedData.history" :key="index" class="text-xs">
+                              <div class="flex items-start space-x-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center">
+                                  <span class="text-xs font-bold text-orange-600">{{ index + 1 }}</span>
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                  <div class="bg-white border border-orange-200 rounded p-2">
+                                    <div class="text-orange-600 font-medium text-xs mb-1">問題:</div>
+                                    <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 0 ? conversation[0] : conversation }}</div>
+                                  </div>
+                                  <div class="bg-white border border-orange-200 rounded p-2">
+                                    <div class="text-orange-600 font-medium text-xs mb-1">回答:</div>
+                                    <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 1 ? conversation[1] : '' }}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -1324,6 +1348,30 @@
                       <div v-if="currentBatchData.system">
                         <label class="block text-sm font-medium text-gray-700 mb-2">系統提示 (System)</label>
                         <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">{{ currentBatchData.system }}</div>
+                      </div>
+                      <div v-if="currentBatchData.history && currentBatchData.history.length > 0">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">對話歷史 (History)</label>
+                        <div class="bg-gray-50 rounded-md p-3 text-sm text-gray-800">
+                          <div class="space-y-2">
+                            <div v-for="(conversation, index) in currentBatchData.history" :key="index" class="text-xs">
+                              <div class="flex items-start space-x-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center">
+                                  <span class="text-xs font-bold text-orange-600">{{ index + 1 }}</span>
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                  <div class="bg-white border border-orange-200 rounded p-2">
+                                    <div class="text-orange-600 font-medium text-xs mb-1">問題:</div>
+                                    <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 0 ? conversation[0] : conversation }}</div>
+                                  </div>
+                                  <div class="bg-white border border-orange-200 rounded p-2">
+                                    <div class="text-orange-600 font-medium text-xs mb-1">回答:</div>
+                                    <div class="text-gray-700 text-xs">{{ Array.isArray(conversation) && conversation.length > 1 ? conversation[1] : '' }}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
