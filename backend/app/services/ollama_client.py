@@ -54,7 +54,14 @@ class OllamaClient:
             data = response.json()
             print("Received response from Ollama.")
             print(data)
-            return data.get("response", "").strip()
+            
+            # Extract content from the response
+            if "message" in data and "content" in data["message"]:
+                return data["message"]["content"].strip()
+            elif "response" in data:
+                return data["response"].strip()
+            else:
+                return ""
             
         except httpx.HTTPStatusError as e:
             print(f"Error response {e.response.status_code} while requesting {e.request.url!r}.")
@@ -210,9 +217,47 @@ class OllamaClient:
         full_prompt = "\n\n".join(prompt)
         
         try:
-            result = await self.generate(full_prompt)
-            print(result)
-            return result
+            response = await self.generate(full_prompt)
+            print(response)
+            
+            # Parse JSON response
+            import json
+            try:
+                # Try to extract JSON from the response
+                json_start = response.find('{')
+                json_end = response.rfind('}') + 1
+                if json_start != -1 and json_end != 0:
+                    json_str = response[json_start:json_end]
+                    result = json.loads(json_str)
+                else:
+                    # Fallback: try to parse the entire response
+                    result = json.loads(response)
+                
+                # Ensure all required fields are present
+                if "instruction" not in result:
+                    result["instruction"] = "請根據資安法規回答問題"
+                if "input" not in result:
+                    result["input"] = "請提供資安相關的指導"
+                if "output" not in result:
+                    result["output"] = "無法生成輸出內容"
+                if "history" not in result:
+                    result["history"] = []
+                
+                return result
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing error: {e}")
+                print(f"Raw response: {response}")
+                
+                # Fallback: return structured response
+                return {
+                    "instruction": "請根據資安法規回答問題",
+                    "input": "請提供資安相關的指導",
+                    "output": response.strip(),
+                    "system": "",
+                    "history": [],
+                    "source": article_contents
+                }
             
         except Exception as e:
             print(f"Generation error: {e}")
