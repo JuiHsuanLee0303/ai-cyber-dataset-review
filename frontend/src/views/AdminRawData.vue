@@ -1230,10 +1230,17 @@
                     <p class="text-sm text-blue-700 mt-1">
                       成功生成 {{ batchGeneratedData.success_count }} 筆，失敗 {{ batchGeneratedData.failed_count }} 筆
                     </p>
+                    <p class="text-sm text-green-700 mt-1">
+                      已選擇 {{ getSelectedBatchCount() }} 筆，共 {{ getAllBatchCount() }} 筆
+                    </p>
                   </div>
                   <div class="text-right">
                     <div class="text-2xl font-bold text-blue-600">{{ batchGeneratedData.success_count }}</div>
                     <div class="text-sm text-blue-500">成功筆數</div>
+                    <div class="mt-2">
+                      <div class="text-lg font-bold text-green-600">{{ getSelectedBatchCount() }}</div>
+                      <div class="text-sm text-green-500">已選擇</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1304,7 +1311,21 @@
               <!-- Batch Generated Content -->
               <div v-else-if="generationType === 'batch' && batchGeneratedData" class="space-y-6">
                 <div class="flex items-center justify-between mb-4">
-                  <h5 class="font-medium text-gray-700">逐筆審批 ({{ currentBatchIndex + 1 }}/{{ batchGeneratedData.datasets.length }})</h5>
+                  <div class="flex items-center space-x-4">
+                    <h5 class="font-medium text-gray-700">逐筆審批 ({{ currentBatchIndex + 1 }}/{{ batchGeneratedData.datasets.length }})</h5>
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-500">當前狀態:</span>
+                      <span v-if="batchSelectedItems[currentBatchIndex] === true" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        ✓ 已選擇
+                      </span>
+                      <span v-else-if="batchSelectedItems[currentBatchIndex] === false" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        ✗ 已跳過
+                      </span>
+                      <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        ○ 未選擇
+                      </span>
+                    </div>
+                  </div>
                   <div class="flex items-center space-x-2">
                     <button 
                       @click="previousBatchItem" 
@@ -1457,6 +1478,26 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                     <span>重新生成</span>
+                  </button>
+                  <button 
+                    @click="selectAllBatchItems(true)"
+                    :disabled="getAllBatchCount() === 0"
+                    class="btn btn-info px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>全部通過</span>
+                  </button>
+                  <button 
+                    @click="selectAllBatchItems(false)"
+                    :disabled="getAllBatchCount() === 0"
+                    class="btn btn-secondary px-4 py-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span>全部跳過</span>
                   </button>
                   <button 
                     @click="confirmBatchGeneratedData" 
@@ -2315,6 +2356,18 @@ const selectBatchItem = (index, selected) => {
 
 const getSelectedBatchCount = () => {
   return Object.values(batchSelectedItems.value).filter(value => value === true).length
+}
+
+const selectAllBatchItems = (selected) => {
+  if (batchGeneratedData.value && batchGeneratedData.value.datasets) {
+    batchGeneratedData.value.datasets.forEach((_, index) => {
+      batchSelectedItems.value[index] = selected
+    })
+  }
+}
+
+const getAllBatchCount = () => {
+  return batchGeneratedData.value?.datasets?.length || 0
 }
 
 const confirmBatchGeneratedData = async () => {
