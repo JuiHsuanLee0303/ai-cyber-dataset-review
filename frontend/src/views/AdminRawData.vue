@@ -2243,8 +2243,10 @@ const generateData = async () => {
     // 決定要使用的法規ID列表
     let articleIds = selectedRegulations.value
     if (generationType.value === 'batch' && randomSelection.value) {
-      // 隨機選擇模式：使用所有可用的法規，最多randomMaxCount筆
-      articleIds = availableRegulations.value.map(r => r.id).slice(0, randomMaxCount.value)
+      // 隨機選擇模式：從所有可用的法規中隨機選擇，最多randomMaxCount筆
+      const allRegulationIds = availableRegulations.value.map(r => r.id)
+      const shuffled = [...allRegulationIds].sort(() => Math.random() - 0.5)
+      articleIds = shuffled.slice(0, Math.min(randomMaxCount.value, allRegulationIds.length))
     }
     
     if (generationType.value === 'single') {
@@ -2329,8 +2331,10 @@ const regenerateBatchData = async () => {
     // 決定要使用的法規ID列表
     let articleIds = selectedRegulations.value
     if (randomSelection.value) {
-      // 隨機選擇模式：使用所有可用的法規
-      articleIds = availableRegulations.value.map(r => r.id)
+      // 隨機選擇模式：從所有可用的法規中隨機選擇，最多randomMaxCount筆
+      const allRegulationIds = availableRegulations.value.map(r => r.id)
+      const shuffled = [...allRegulationIds].sort(() => Math.random() - 0.5)
+      articleIds = shuffled.slice(0, Math.min(randomMaxCount.value, allRegulationIds.length))
     }
     
     const payload = {
