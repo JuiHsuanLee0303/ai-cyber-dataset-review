@@ -512,7 +512,7 @@ def create_legal_articles(db: Session, articles: List[schemas.LegalArticleCreate
         db.refresh(article)
     return db_articles
 
-def get_legal_articles(db: Session, skip: int = 0, limit: int = 100):
+def get_legal_articles(db: Session, skip: int = 0, limit: int = 10000):
     return db.query(models.LegalArticle).offset(skip).limit(limit).all()
 
 def get_legal_article_by_title_and_number(db: Session, title: str, number: str):

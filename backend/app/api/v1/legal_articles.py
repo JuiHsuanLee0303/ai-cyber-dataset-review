@@ -34,7 +34,7 @@ def read_articles(
     Retrieve all legal articles.
     Only accessible by admin users.
     """
-    return crud.get_legal_articles(db=db, skip=skip)
+    return crud.get_legal_articles(db=db, skip=skip, limit=limit)
 
 @router.get("/search", response_model=schemas.LegalArticle)
 def search_article(

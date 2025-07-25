@@ -1028,6 +1028,20 @@
                     <p class="text-xs text-gray-500">
                       {{ randomSelection ? '啟用後系統會自動隨機選擇法規，無需手動選擇' : '啟用後每次生成會隨機選擇 1-3 個法規' }}
                     </p>
+                    
+                    <!-- 隨機選擇最大數量設定 -->
+                    <div v-if="randomSelection && generationType === 'batch'" class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <label class="block text-sm font-medium text-blue-700 mb-2">隨機選擇最大數量</label>
+                      <input 
+                        v-model.number="randomMaxCount" 
+                        type="number" 
+                        min="1" 
+                        max="50"
+                        class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        placeholder="1-50"
+                      />
+                      <p class="text-xs text-blue-600 mt-1">設定隨機選擇法規的最大數量 (1-50)</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1069,7 +1083,7 @@
                 <h5 class="font-medium text-gray-700">
                   可選法規 ({{ availableRegulations.length }})
                   <span v-if="generationType === 'batch' && randomSelection" class="text-sm text-blue-600 font-normal">
-                    - 隨機選擇模式
+                    - 隨機選擇模式 (最多 {{ randomMaxCount }} 個)
                   </span>
                 </h5>
                 <div 
@@ -1093,7 +1107,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                       </svg>
                       <p class="text-sm">隨機選擇模式已啟用</p>
-                      <p class="text-xs mt-1">系統將自動從所有法規中隨機選擇</p>
+                      <p class="text-xs mt-1">系統將自動從所有法規中隨機選擇最多 {{ randomMaxCount }} 個法規</p>
                     </div>
                   </div>
                   <div v-else class="space-y-2">
@@ -1602,6 +1616,7 @@ const confirming = ref(false)
 const generationType = ref('single') // 'single' or 'batch'
 const batchSize = ref(5)
 const randomSelection = ref(true)
+const randomMaxCount = ref(10) // 隨機選擇的最大數量
 const batchGeneratedData = ref(null)
 const currentBatchIndex = ref(0)
 const batchSelectedItems = ref({})
@@ -2129,6 +2144,7 @@ const openGenerateModal = async () => {
   generationType.value = 'single'
   batchSize.value = 5
   randomSelection.value = true
+  randomMaxCount.value = 10
   batchGeneratedData.value = null
   currentBatchIndex.value = 0
   batchSelectedItems.value = {}
@@ -2211,6 +2227,11 @@ const generateData = async () => {
     return
   }
 
+  if (generationType.value === 'batch' && randomSelection.value && (!randomMaxCount.value || randomMaxCount.value < 1 || randomMaxCount.value > 50)) {
+    toast.error('請設定有效的隨機選擇最大數量 (1-50)')
+    return
+  }
+
   generating.value = true
   generatedData.value = null
   batchGeneratedData.value = null
@@ -2222,8 +2243,8 @@ const generateData = async () => {
     // 決定要使用的法規ID列表
     let articleIds = selectedRegulations.value
     if (generationType.value === 'batch' && randomSelection.value) {
-      // 隨機選擇模式：使用所有可用的法規
-      articleIds = availableRegulations.value.map(r => r.id)
+      // 隨機選擇模式：使用所有可用的法規，最多randomMaxCount筆
+      articleIds = availableRegulations.value.map(r => r.id).slice(0, randomMaxCount.value)
     }
     
     if (generationType.value === 'single') {
