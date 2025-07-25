@@ -26,7 +26,7 @@ def create_articles(
 @router.get("/", response_model=List[schemas.LegalArticle])
 def read_articles(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 10000,
     db: Session = Depends(get_db),
     admin_user: models.User = Depends(get_current_admin_user)
 ):
@@ -34,7 +34,7 @@ def read_articles(
     Retrieve all legal articles.
     Only accessible by admin users.
     """
-    return crud.get_legal_articles(db=db, skip=skip, limit=limit)
+    return crud.get_legal_articles(db=db, skip=skip)
 
 @router.get("/search", response_model=schemas.LegalArticle)
 def search_article(
