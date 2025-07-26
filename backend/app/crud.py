@@ -16,7 +16,7 @@ def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
+    return db.query(models.User).offset(skip).limit(10000).all()
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
@@ -68,7 +68,7 @@ def get_raw_datasets(db: Session, skip: int = 0, limit: int = 100):
         .filter(models.RawDataset.review_status.in_(['pending', 'reviewing', 'regenerating']))
         .order_by(models.RawDataset.id)
         .offset(skip)
-        .limit(limit)
+        .limit(10000)
         .all()
     )
     
@@ -118,7 +118,7 @@ def create_raw_dataset(db: Session, dataset: schemas.RawDatasetCreate):
     return db_dataset
 
 def get_final_datasets(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.FinalDataset).offset(skip).limit(limit).all()
+    return db.query(models.FinalDataset).offset(skip).limit(10000).all()
 
 def get_final_dataset(db: Session, dataset_id: int):
     return db.query(models.FinalDataset).filter(models.FinalDataset.id == dataset_id).first()
